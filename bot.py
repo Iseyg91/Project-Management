@@ -487,7 +487,7 @@ ITEMS = [
         "used": True
     },
     {
-        "id": 555,
+        "id": 553,
         "emoji": "<:haki_v1:1365669380083679252>",
         "title": "Haki de l’Armement | 𝕀𝕟𝕗𝕖𝕣𝕚𝕖𝕦𝕣",
         "description": "Offre un collect de 5,000, cooldown de 2 heures.",
@@ -546,7 +546,7 @@ ITEMS = [
         "used": True
     },
     {
-        "id": 652,
+        "id": 653,
         "emoji": "<:haki_v2:1365669343685378160>",
         "title": "Haki de l’Observation | 𝔸𝕧𝕒𝕟𝕔𝕖",
         "description": "Permet de connaître l'heure et le contenu du prochain restock grâce à !!Wobservation. (Cooldown : 2 semaines)",
