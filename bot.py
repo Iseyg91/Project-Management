@@ -2201,6 +2201,90 @@ async def badge_give(interaction: discord.Interaction, member: discord.Member, b
     )
     await interaction.response.send_message(embed=embed)
 
+@bot.tree.command(name="badge-inventory", description="Affiche les badges de l'inventaire d'un utilisateur.")
+async def badge_inventory(interaction: discord.Interaction):
+    # Récupérer les données de l'utilisateur
+    user_data = collection20.find_one({"user_id": interaction.user.id})
+    
+    if not user_data or not user_data.get("badges"):
+        embed = discord.Embed(
+            title="❌ Aucun badge trouvé",
+            description="Tu ne possèdes aucun badge.",
+            color=discord.Color.red()
+        )
+        return await interaction.response.send_message(embed=embed)
+
+    # Récupérer les badges de l'utilisateur
+    badge_ids = user_data["badges"]
+    badges = collection19.find({"id": {"$in": badge_ids}})
+
+    embed = discord.Embed(title=f"Inventaire de Badges de {interaction.user.display_name}", color=discord.Color.blue())
+
+    if badges:
+        for badge in badges:
+            embed.add_field(
+                name=f"{badge['emoji']} {badge['title']}",
+                value=f"{badge['description']}\nPrix: {badge['price']} {badge['emoji_price']}",
+                inline=False
+            )
+    else:
+        embed.add_field(
+            name="Aucun badge trouvé",
+            value="Tu ne possèdes aucun badge.",
+            inline=False
+        )
+
+    await interaction.response.send_message(embed=embed)
+
+# Fonction pour récupérer le leaderboard des utilisateurs ayant un badge spécifique
+@bot.tree.command(name="badge-leaderboard", description="Affiche le classement des utilisateurs ayant un badge spécifique.")
+@app_commands.checks.has_permissions(administrator=True)
+@app_commands.describe(badge_id="Badge à filtrer")
+@app_commands.autocomplete(badge_id=badge_autocomplete_by_name)  # Utilisation de l'autocomplétion pour le badge
+async def badge_leaderboard(interaction: discord.Interaction, badge_id: int):
+    # Récupérer les utilisateurs qui ont ce badge spécifique
+    leaderboard = collection20.find({"badges": badge_id}).sort("badges", -1).limit(10)  # Trier par nombre de badges
+
+    # Chercher les données du badge
+    badge = collection19.find_one({"id": badge_id})
+    if not badge:
+        embed = discord.Embed(
+            title="❌ Badge introuvable",
+            description="Ce badge n'existe pas.",
+            color=discord.Color.red()
+        )
+        return await interaction.response.send_message(embed=embed)
+
+    embed = discord.Embed(
+        title=f"🏅 Classement des utilisateurs ayant le badge **{badge['title']}**",
+        description=f"Voici les 10 utilisateurs ayant le badge {badge['emoji']}",
+        color=discord.Color.gold()
+    )
+
+    if leaderboard.count() == 0:
+        embed.add_field(name="Aucun utilisateur", value="Aucun utilisateur ne possède ce badge.", inline=False)
+    else:
+        # Ajouter les utilisateurs au classement
+        for idx, user_data in enumerate(leaderboard, start=1):
+            user = await bot.fetch_user(user_data["user_id"])
+            badge_count = len(user_data.get("badges", []))  # Compter le nombre total de badges
+            embed.add_field(name=f"{idx}. {user.display_name}", value=f"{badge_count} badges", inline=False)
+
+    await interaction.response.send_message(embed=embed)
+
+# Fonction d'autocomplétion pour filtrer par badge dans le leaderboard
+@app_commands.autocomplete(badge_id=True)
+async def badge_autocomplete_by_name(interaction: discord.Interaction, current: str):
+    results = collection19.find(
+        {"title": {"$regex": f"^{current}", "$options": "i"}}  # Autocomplétion par titre de badge
+    ).limit(20)
+
+    choices = []
+    for badge in results:
+        choices.append(app_commands.Choice(name=f"{badge['title']} {badge['emoji']} (ID: {badge['id']})", value=badge["id"]))
+
+    return choices
+
 @bot.tree.command(name="badge-take", description="(Admin) Retire un badge d'un utilisateur.")
 @app_commands.checks.has_permissions(administrator=True)
 @app_commands.describe(
