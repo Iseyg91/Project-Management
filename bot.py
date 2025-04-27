@@ -2261,7 +2261,8 @@ async def badge_leaderboard(interaction: discord.Interaction, badge_id: int):
         color=discord.Color.gold()
     )
 
-    if leaderboard.count() == 0:
+    # Utilisez count_documents pour obtenir le nombre de documents correspondants
+    if collection20.count_documents({"badges": badge_id}) == 0:
         embed.add_field(name="Aucun utilisateur", value="Aucun utilisateur ne possède ce badge.", inline=False)
     else:
         # Ajouter les utilisateurs au classement
