@@ -2610,49 +2610,85 @@ async def reset_quetes(interaction: discord.Interaction):
     result = collection32.delete_many({})
     await interaction.response.send_message(f"🧹 Collection `ether_quetes` reset avec succès. {result.deleted_count} quêtes supprimées.")
 
-@bot.tree.command(name="id-items", description="Affiche les IDs d'items utilisés et les intervalles libres")
+@bot.tree.command(name="id-items", description="Analyse complète des IDs : utilisés, doublons, intervalles (U, ∩)")
 async def id_items(interaction: discord.Interaction):
     if interaction.user.id != ISEY_ID:
-        return await interaction.response.send_message("❌ Tu n'as pas la permission d'utiliser cette commande.", ephemeral=True)
+        return await interaction.response.send_message(
+            embed=discord.Embed(
+                title="❌ Accès refusé",
+                description="Tu n'as pas la permission d'utiliser cette commande.",
+                color=discord.Color.red()
+            ),
+            ephemeral=True
+        )
 
     used_ids = sorted(item['id'] for item in ITEMS)
-    id_list = ", ".join(str(id) for id in used_ids)
 
-    # Trouver les intervalles libres
-    free_intervals = []
-    if used_ids:
-        min_id = used_ids[0]
-        max_id = used_ids[-1]
-        current = min_id
-        while current <= max_id:
-            if current not in used_ids:
-                start = current
-                while current not in used_ids and current <= max_id:
-                    current += 1
-                end = current - 1
-                if start == end:
-                    free_intervals.append(f"{start}")
-                else:
-                    free_intervals.append(f"{start}-{end}")
-            current += 1
+    # Doublons
+    id_counter = {}
+    for id in used_ids:
+        id_counter[id] = id_counter.get(id, 0) + 1
+    duplicates = [str(id) for id, count in id_counter.items() if count > 1]
 
+    # Tous les IDs possibles
+    all_ids = set(range(1, 2001))
+    missing_ids = sorted(all_ids - set(used_ids))
+
+    # Création des intervalles [a;b] pour IDs libres
+    intervals = []
+    if missing_ids:
+        start = missing_ids[0]
+        end = missing_ids[0]
+        for id in missing_ids[1:]:
+            if id == end + 1:
+                end = id
+            else:
+                intervals.append(f"[{start};{end}]")
+                start = id
+                end = id
+        intervals.append(f"[{start};{end}]")
+
+    # Format Union d'intervalles
+    if intervals:
+        union_intervals = " ∪ ".join(intervals)
+    else:
+        union_intervals = "∅"  # Ensemble vide
+
+    # Format ensemble des IDs utilisés
+    used_set = ", ".join(str(id) for id in used_ids[:20])
+    if len(used_ids) > 20:
+        used_set += ", ..."
+
+    # Format des doublons
+    duplicates_display = ", ".join(duplicates) if duplicates else "Aucun doublon trouvé ✅"
+
+    # Construction de l'embed
     embed = discord.Embed(
-        title="🆔 Liste des ID d'items utilisés",
-        description="Voici les IDs actuellement utilisés ainsi que les intervalles disponibles.",
+        title="📚 Analyse Mathématique des IDs d'Items",
+        description="Visualisation mathématique complète : ensembles, unions, doublons.",
         color=discord.Color.purple()
     )
 
     embed.add_field(
-        name="📋 IDs utilisés",
-        value=id_list if len(id_list) < 1024 else "Trop d'IDs pour tout afficher ici.",
+        name="🔢 IDs Utilisés",
+        value=f"**Ensemble** : `{{ {used_set} }}`\n\n**Cardinal** : `{len(used_ids)}` IDs",
         inline=False
     )
 
     embed.add_field(
-        name="🛤️ Intervalles libres",
-        value="\n".join(free_intervals) if free_intervals else "Aucun intervalle libre.",
+        name="➗ Intervalles d'IDs Libres",
+        value=f"**Union** : `{union_intervals}`",
         inline=False
     )
+
+    embed.add_field(
+        name="🚨 Doublons",
+        value=duplicates_display,
+        inline=False
+    )
+
+    embed.set_footer(text=f"Analyse réalisée par {interaction.user.display_name}", icon_url=interaction.user.display_avatar.url)
+    embed.timestamp = discord.utils.utcnow()
 
     await interaction.response.send_message(embed=embed)
 
