@@ -2646,15 +2646,16 @@ import io
 
 @bot.tree.command(name="id-items", description="📚 Affiche les IDs d'items utilisés et les plages libres")
 async def id_items(interaction: discord.Interaction):
-    # IDs utilisés (exemple statique ici)
-    used_ids = [1, 2, 3, 4, 5, 8, 9, 10, 15, 20, 100, 200, 300, 500, 800]
+    # Récupérer dynamiquement tous les IDs utilisés depuis la base de données
+    all_items = list(collection16.find({}, {"id": 1, "_id": 0}))  # Ne récupère que le champ "id"
+    used_ids = sorted(item["id"] for item in all_items)
 
-    # IDs totaux
+    # IDs totaux possibles
     total_ids = list(range(1, 1001))
-    
-    # IDs libres
+
+    # Calcul des IDs libres
     free_ids = [i for i in total_ids if i not in used_ids]
-    
+
     # Génération des plages libres
     free_intervals = []
     current_start = None
@@ -2670,7 +2671,7 @@ async def id_items(interaction: discord.Interaction):
     if current_start is not None:
         free_intervals.append((current_start, 1000))
 
-    # Graphique d'utilisation
+    # Graphique de l'utilisation
     usage_percentage = len(used_ids) / len(total_ids) * 100
     free_percentage = 100 - usage_percentage
 
@@ -2686,7 +2687,7 @@ async def id_items(interaction: discord.Interaction):
     buf.seek(0)
     plt.close()
 
-    # Embed
+    # Embed Discord
     embed = Embed(
         title="📚 Analyse des IDs d'Items",
         description="Voici l'état actuel des IDs utilisés et disponibles.",
@@ -2718,6 +2719,58 @@ async def id_items(interaction: discord.Interaction):
 
     file = discord.File(buf, filename="usage_graph.png")
     await interaction.response.send_message(embed=embed, file=file)
+
+@bot.tree.command(name="id-random", description="🎲 Tire un ID libre automatiquement parmi ceux disponibles en boutique")
+async def id_random(interaction: discord.Interaction):
+    # Aller chercher tous les IDs utilisés directement depuis MongoDB
+    used_ids = [doc["id"] for doc in collection16.find({}, {"id": 1})]
+
+    # IDs possibles de 1 à 1000 (par exemple)
+    total_ids = list(range(1, 1001))
+
+    # IDs libres = ceux pas utilisés
+    free_ids = [i for i in total_ids if i not in used_ids]
+
+    # Fonction pour tirer un ID libre au hasard
+    def pick_random_id():
+        return random.choice(free_ids) if free_ids else None
+
+    random_id = pick_random_id()
+
+    if random_id is None:
+        await interaction.response.send_message("❌ Aucun ID disponible.", ephemeral=True)
+        return
+
+    # Embed de réponse
+    embed = Embed(
+        title="🎲 ID Libre Tiré",
+        description=f"Voici un ID libre :\n\n`{random_id}`",
+        color=discord.Color.gold()
+    )
+    embed.set_footer(text="Clique sur 🔄 pour tirer un autre ID !", icon_url=interaction.guild.icon.url if interaction.guild.icon else None)
+
+    # Vue avec bouton Re-roll
+    class RandomIDView(View):
+        def __init__(self):
+            super().__init__(timeout=30)
+
+        @discord.ui.button(label="Re-roll 🔄", style=ButtonStyle.primary)
+        async def reroll(self, interaction_button: discord.Interaction, button: Button):
+            new_id = pick_random_id()
+            if new_id is None:
+                await interaction_button.response.edit_message(content="❌ Aucun ID disponible.", embed=None, view=None)
+                return
+
+            new_embed = Embed(
+                title="🎲 ID Libre Tiré",
+                description=f"Voici un nouvel ID libre :\n\n`{new_id}`",
+                color=discord.Color.gold()
+            )
+            new_embed.set_footer(text="Clique sur 🔄 pour tirer un autre ID !", icon_url=interaction.guild.icon.url if interaction.guild.icon else None)
+
+            await interaction_button.response.edit_message(embed=new_embed)
+
+    await interaction.response.send_message(embed=embed, view=RandomIDView())
 
 # Token pour démarrer le bot (à partir des secrets)
 # Lancer le bot avec ton token depuis l'environnement  
