@@ -2610,85 +2610,76 @@ async def reset_quetes(interaction: discord.Interaction):
     result = collection32.delete_many({})
     await interaction.response.send_message(f"🧹 Collection `ether_quetes` reset avec succès. {result.deleted_count} quêtes supprimées.")
 
-@bot.tree.command(name="id-items", description="Analyse complète des IDs : utilisés, doublons, intervalles (U, ∩)")
+@bot.tree.command(name="id-items", description="Affiche les IDs d'items utilisés et les plages libres")
 async def id_items(interaction: discord.Interaction):
-    if interaction.user.id != ISEY_ID:
-        return await interaction.response.send_message(
-            embed=discord.Embed(
-                title="❌ Accès refusé",
-                description="Tu n'as pas la permission d'utiliser cette commande.",
-                color=discord.Color.red()
-            ),
-            ephemeral=True
-        )
-
-    used_ids = sorted(item['id'] for item in ITEMS)
-
-    # Doublons
-    id_counter = {}
-    for id in used_ids:
-        id_counter[id] = id_counter.get(id, 0) + 1
-    duplicates = [str(id) for id, count in id_counter.items() if count > 1]
-
-    # Tous les IDs possibles
-    all_ids = set(range(1, 2001))
-    missing_ids = sorted(all_ids - set(used_ids))
-
-    # Création des intervalles [a;b] pour IDs libres
-    intervals = []
-    if missing_ids:
-        start = missing_ids[0]
-        end = missing_ids[0]
-        for id in missing_ids[1:]:
-            if id == end + 1:
-                end = id
+    # Récupérer les IDs utilisés (exemple - tu peux les récupérer depuis ta base de données)
+    used_ids = [1, 2, 3, 4, 5, 8, 9, 10, 15, 20, 100, 200, 300, 500, 800]
+    
+    # Plage totale des IDs
+    total_ids = list(range(1, 1001))  # IDs de 1 à 1000
+    
+    # Calculer les IDs libres (complémentaire)
+    free_ids = [i for i in total_ids if i not in used_ids]
+    
+    # Calculer les plages libres
+    free_intervals = []
+    current_interval = None
+    
+    for i in range(1, 1001):
+        if i in free_ids:
+            if current_interval is None:
+                current_interval = [i, i]
             else:
-                intervals.append(f"[{start};{end}]")
-                start = id
-                end = id
-        intervals.append(f"[{start};{end}]")
+                current_interval[1] = i
+        else:
+            if current_interval is not None:
+                free_intervals.append(f"[{current_interval[0]};{current_interval[1]}]")
+                current_interval = None
+    if current_interval is not None:
+        free_intervals.append(f"[{current_interval[0]};{current_interval[1]}]")
+    
+    # Complémentaire : les IDs non utilisés
+    complement_ids = [i for i in total_ids if i not in used_ids]
 
-    # Format Union d'intervalles
-    if intervals:
-        union_intervals = " ∪ ".join(intervals)
-    else:
-        union_intervals = "∅"  # Ensemble vide
-
-    # Format ensemble des IDs utilisés
-    used_set = ", ".join(str(id) for id in used_ids[:20])
-    if len(used_ids) > 20:
-        used_set += ", ..."
-
-    # Format des doublons
-    duplicates_display = ", ".join(duplicates) if duplicates else "Aucun doublon trouvé ✅"
-
-    # Construction de l'embed
-    embed = discord.Embed(
-        title="📚 Analyse Mathématique des IDs d'Items",
-        description="Visualisation mathématique complète : ensembles, unions, doublons.",
-        color=discord.Color.purple()
+    # Afficher dans un embed
+    embed = Embed(
+        title="📚 Analyse des IDs",
+        description="Voici les IDs actuellement utilisés et les plages disponibles :",
+        color=discord.Color.green()
     )
 
     embed.add_field(
-        name="🔢 IDs Utilisés",
-        value=f"**Ensemble** : `{{ {used_set} }}`\n\n**Cardinal** : `{len(used_ids)}` IDs",
+        name="**Utilisés**",
+        value=f"IDs utilisés : {', '.join(map(str, used_ids))}",
         inline=False
     )
 
     embed.add_field(
-        name="➗ Intervalles d'IDs Libres",
-        value=f"**Union** : `{union_intervals}`",
+        name="**Libres**",
+        value=f"Plages libres : {', '.join(free_intervals)}",
         inline=False
     )
 
     embed.add_field(
-        name="🚨 Doublons",
-        value=duplicates_display,
+        name="**Complémentaire**",
+        value=f"Complémentaire (non utilisés) : {', '.join(map(str, complement_ids))}",
         inline=False
     )
 
-    embed.set_footer(text=f"Analyse réalisée par {interaction.user.display_name}", icon_url=interaction.user.display_avatar.url)
-    embed.timestamp = discord.utils.utcnow()
+    embed.add_field(
+        name="**Plages Union**",
+        value="Utilisation des plages : " + ' ∪ '.join(free_intervals),
+        inline=False
+    )
+
+    # Graphique de l'utilisation
+    usage_percentage = len(used_ids) / len(total_ids) * 100
+    progress_bar = "█" * int(usage_percentage / 10) + "▒" * (10 - int(usage_percentage / 10))
+    embed.add_field(
+        name="**Graphique d'Utilisation**",
+        value=f"Utilisation : [{progress_bar}] {usage_percentage:.2f}% utilisé",
+        inline=False
+    )
 
     await interaction.response.send_message(embed=embed)
 
