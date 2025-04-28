@@ -2646,8 +2646,8 @@ import io
 
 @bot.tree.command(name="id-items", description="📚 Affiche les IDs d'items utilisés et les plages libres")
 async def id_items(interaction: discord.Interaction):
-    # Récupérer dynamiquement tous les IDs utilisés depuis la base de données
-    all_items = list(collection16.find({}, {"id": 1, "_id": 0}))  # Ne récupère que le champ "id"
+    # Récupérer uniquement les documents qui possèdent un champ 'id'
+    all_items = list(collection16.find({"id": {"$exists": True}}, {"id": 1, "_id": 0}))
     used_ids = sorted(item["id"] for item in all_items)
 
     # IDs totaux possibles
@@ -2666,7 +2666,7 @@ async def id_items(interaction: discord.Interaction):
                 current_start = i
         else:
             if current_start is not None:
-                free_intervals.append((current_start, i-1))
+                free_intervals.append((current_start, i - 1))
                 current_start = None
     if current_start is not None:
         free_intervals.append((current_start, 1000))
@@ -2687,22 +2687,34 @@ async def id_items(interaction: discord.Interaction):
     buf.seek(0)
     plt.close()
 
-    # Embed Discord
+    # Création de l'embed Discord
     embed = Embed(
         title="📚 Analyse des IDs d'Items",
         description="Voici l'état actuel des IDs utilisés et disponibles.",
         color=discord.Color.blurple()
     )
 
+    # Gestion du champ des IDs utilisés
+    ids_used_text = ', '.join(map(str, used_ids))
+    if len(ids_used_text) > 1024:
+        ids_used_text = ids_used_text[:1020] + "..."
+
     embed.add_field(
         name="🛠️ IDs Utilisés",
-        value=f"`{len(used_ids)}` IDs utilisés\n`{', '.join(map(str, used_ids))}`",
+        value=f"`{len(used_ids)}` IDs utilisés\n`{ids_used_text}`",
         inline=False
     )
 
+    # Gestion du champ des plages d'IDs libres
+    free_intervals_text = "\n".join(
+        f"`[{start} ➔ {end}]`" if start != end else f"`[{start}]`" for start, end in free_intervals
+    )
+    if len(free_intervals_text) > 1024:
+        free_intervals_text = free_intervals_text[:1020] + "..."
+
     embed.add_field(
         name="📖 Plages d'IDs Libres",
-        value="\n".join([f"`[{start} ➔ {end}]`" if start != end else f"`[{start}]`" for start, end in free_intervals])[:1024],
+        value=free_intervals_text,
         inline=False
     )
 
@@ -2720,10 +2732,15 @@ async def id_items(interaction: discord.Interaction):
     file = discord.File(buf, filename="usage_graph.png")
     await interaction.response.send_message(embed=embed, file=file)
 
+import random
+import discord
+from discord import Embed, ButtonStyle
+from discord.ui import View, Button
+
 @bot.tree.command(name="id-random", description="🎲 Tire un ID libre automatiquement parmi ceux disponibles en boutique")
 async def id_random(interaction: discord.Interaction):
     # Aller chercher tous les IDs utilisés directement depuis MongoDB
-    used_ids = [doc["id"] for doc in collection16.find({}, {"id": 1})]
+    used_ids = [doc["id"] for doc in collection16.find({}, {"id": 1}) if "id" in doc]
 
     # IDs possibles de 1 à 1000 (par exemple)
     total_ids = list(range(1, 1001))
@@ -2771,6 +2788,7 @@ async def id_random(interaction: discord.Interaction):
             await interaction_button.response.edit_message(embed=new_embed)
 
     await interaction.response.send_message(embed=embed, view=RandomIDView())
+
 
 # Token pour démarrer le bot (à partir des secrets)
 # Lancer le bot avec ton token depuis l'environnement  
