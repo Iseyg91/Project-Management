@@ -2610,21 +2610,51 @@ async def reset_quetes(interaction: discord.Interaction):
     result = collection32.delete_many({})
     await interaction.response.send_message(f"🧹 Collection `ether_quetes` reset avec succès. {result.deleted_count} quêtes supprimées.")
 
+from discord import Embed
+import matplotlib.pyplot as plt
+import numpy as np
+import io
+import discord
+
+# Fonction d'union des plages (par exemple, union de [6;7] et [11;19])
+def union_intervals(intervals):
+    # Tri des intervalles par le début de chaque intervalle
+    intervals.sort(key=lambda x: x[0])
+    merged = []
+    
+    for interval in intervals:
+        if not merged or merged[-1][1] < interval[0]:
+            merged.append(interval)
+        else:
+            merged[-1][1] = max(merged[-1][1], interval[1])
+    return merged
+
+# Fonction d'intersection des plages
+def intersection_intervals(intervals):
+    # Intersection de toutes les plages disponibles
+    min_end = min(interval[1] for interval in intervals)
+    max_start = max(interval[0] for interval in intervals)
+    
+    if max_start <= min_end:
+        return [(max_start, min_end)]  # Renvoie l'intersection
+    return []
+
+# Commande /id-items
 @bot.tree.command(name="id-items", description="Affiche les IDs d'items utilisés et les plages libres")
 async def id_items(interaction: discord.Interaction):
-    # Récupérer les IDs utilisés (exemple - tu peux les récupérer depuis ta base de données)
+    # Exemple de IDs utilisés (ce serait récupéré depuis ta base de données Mongo)
     used_ids = [1, 2, 3, 4, 5, 8, 9, 10, 15, 20, 100, 200, 300, 500, 800]
-    
+
     # Plage totale des IDs
     total_ids = list(range(1, 1001))  # IDs de 1 à 1000
     
-    # Calculer les IDs libres (complémentaire)
+    # Calcul des IDs libres
     free_ids = [i for i in total_ids if i not in used_ids]
     
-    # Calculer les plages libres
+    # Générer les intervalles des IDs libres
     free_intervals = []
     current_interval = None
-    
+
     for i in range(1, 1001):
         if i in free_ids:
             if current_interval is None:
@@ -2633,55 +2663,85 @@ async def id_items(interaction: discord.Interaction):
                 current_interval[1] = i
         else:
             if current_interval is not None:
-                free_intervals.append(f"[{current_interval[0]};{current_interval[1]}]")
+                free_intervals.append(current_interval)
                 current_interval = None
     if current_interval is not None:
-        free_intervals.append(f"[{current_interval[0]};{current_interval[1]}]")
-    
-    # Complémentaire : les IDs non utilisés
-    complement_ids = [i for i in total_ids if i not in used_ids]
+        free_intervals.append(current_interval)
 
-    # Afficher dans un embed
+    # Affichage des plages libres
+    free_interval_strings = [f"[{interval[0]};{interval[1]}]" for interval in free_intervals]
+
+    # Calcul des doublons dans les IDs (juste pour être sûr qu'il n'y a pas d'erreurs)
+    duplicate_ids = [i for i in used_ids if used_ids.count(i) > 1]
+
+    # Calcul des unions et intersections des plages (juste pour illustration)
+    union = union_intervals(free_intervals)
+    intersection = intersection_intervals(free_intervals)
+
+    # Calcul de l'usage des IDs
+    usage_percentage = len(used_ids) / len(total_ids) * 100
+    free_percentage = 100 - usage_percentage
+    
+    # Préparation du graphique
+    fig, ax = plt.subplots(figsize=(8, 4))
+    labels = ['Utilisés', 'Libres']
+    sizes = [usage_percentage, free_percentage]
+    ax.pie(sizes, labels=labels, autopct='%1.1f%%', colors=['#ff6666', '#66cc66'], startangle=90)
+    ax.axis('equal')
+
+    # Sauvegarder l'image du graphique dans un buffer
+    buf = io.BytesIO()
+    plt.savefig(buf, format='png')
+    buf.seek(0)
+
+    # Embed de l'output
     embed = Embed(
         title="📚 Analyse des IDs",
-        description="Voici les IDs actuellement utilisés et les plages disponibles :",
+        description="Détails complets des IDs utilisés et des plages libres.",
         color=discord.Color.green()
     )
 
     embed.add_field(
-        name="**Utilisés**",
+        name="**IDs Utilisés**",
         value=f"IDs utilisés : {', '.join(map(str, used_ids))}",
         inline=False
     )
 
     embed.add_field(
-        name="**Libres**",
-        value=f"Plages libres : {', '.join(free_intervals)}",
+        name="**Plages Libres**",
+        value=f"Plages d'IDs libres : {', '.join(free_interval_strings)}",
         inline=False
     )
 
     embed.add_field(
-        name="**Complémentaire**",
-        value=f"Complémentaire (non utilisés) : {', '.join(map(str, complement_ids))}",
+        name="**Doublons**",
+        value=f"Doublons détectés (IDs répétés) : {', '.join(map(str, duplicate_ids))}" if duplicate_ids else "Aucun doublon.",
         inline=False
     )
 
     embed.add_field(
-        name="**Plages Union**",
-        value="Utilisation des plages : " + ' ∪ '.join(free_intervals),
+        name="**Union des Plages Libres**",
+        value=f"Plages après union : {', '.join([f'[{i[0]};{i[1]}]' for i in union])}",
         inline=False
     )
 
-    # Graphique de l'utilisation
-    usage_percentage = len(used_ids) / len(total_ids) * 100
-    progress_bar = "█" * int(usage_percentage / 10) + "▒" * (10 - int(usage_percentage / 10))
+    embed.add_field(
+        name="**Intersection des Plages Libres**",
+        value=f"Intersection des plages : {', '.join([f'[{i[0]};{i[1]}]' for i in intersection])}" if intersection else "Aucune intersection.",
+        inline=False
+    )
+
     embed.add_field(
         name="**Graphique d'Utilisation**",
-        value=f"Utilisation : [{progress_bar}] {usage_percentage:.2f}% utilisé",
+        value=f"Utilisation des IDs : [{usage_percentage:.2f}% utilisés, {free_percentage:.2f}% libres]",
         inline=False
     )
 
-    await interaction.response.send_message(embed=embed)
+    # Ajouter le graphique comme image
+    file = discord.File(buf, filename="usage_graph.png")
+    embed.set_image(url="attachment://usage_graph.png")
+
+    await interaction.response.send_message(embed=embed, file=file)
 
 # Token pour démarrer le bot (à partir des secrets)
 # Lancer le bot avec ton token depuis l'environnement  
