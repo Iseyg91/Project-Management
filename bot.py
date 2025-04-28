@@ -2610,6 +2610,52 @@ async def reset_quetes(interaction: discord.Interaction):
     result = collection32.delete_many({})
     await interaction.response.send_message(f"🧹 Collection `ether_quetes` reset avec succès. {result.deleted_count} quêtes supprimées.")
 
+@bot.tree.command(name="id-items", description="Affiche les IDs d'items utilisés et les intervalles libres")
+async def id_items(interaction: discord.Interaction):
+    if interaction.user.id != ISEY_ID:
+        return await interaction.response.send_message("❌ Tu n'as pas la permission d'utiliser cette commande.", ephemeral=True)
+
+    used_ids = sorted(item['id'] for item in ITEMS)
+    id_list = ", ".join(str(id) for id in used_ids)
+
+    # Trouver les intervalles libres
+    free_intervals = []
+    if used_ids:
+        min_id = used_ids[0]
+        max_id = used_ids[-1]
+        current = min_id
+        while current <= max_id:
+            if current not in used_ids:
+                start = current
+                while current not in used_ids and current <= max_id:
+                    current += 1
+                end = current - 1
+                if start == end:
+                    free_intervals.append(f"{start}")
+                else:
+                    free_intervals.append(f"{start}-{end}")
+            current += 1
+
+    embed = discord.Embed(
+        title="🆔 Liste des ID d'items utilisés",
+        description="Voici les IDs actuellement utilisés ainsi que les intervalles disponibles.",
+        color=discord.Color.purple()
+    )
+
+    embed.add_field(
+        name="📋 IDs utilisés",
+        value=id_list if len(id_list) < 1024 else "Trop d'IDs pour tout afficher ici.",
+        inline=False
+    )
+
+    embed.add_field(
+        name="🛤️ Intervalles libres",
+        value="\n".join(free_intervals) if free_intervals else "Aucun intervalle libre.",
+        inline=False
+    )
+
+    await interaction.response.send_message(embed=embed)
+
 # Token pour démarrer le bot (à partir des secrets)
 # Lancer le bot avec ton token depuis l'environnement  
 keep_alive()
