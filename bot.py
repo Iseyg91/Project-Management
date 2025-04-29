@@ -485,6 +485,8 @@ ITEMS = [
             "items": False
         },
         "used": True
+        }
+    },
     {
         "id": 888,
         "emoji": "<:infini:1363615948090638490>",
