@@ -1989,22 +1989,15 @@ async def item_shop_autocomplete(interaction: discord.Interaction, current: str)
 
     return results
 
-@bot.tree.command(name="reset-item", description="Réinitialise ou supprime les items dans la boutique")
-@app_commands.describe(item_id="ID de l'item à réinitialiser ou supprimer")
-@app_commands.autocomplete(item_id=item_shop_autocomplete)  # <<<<< autocomplétion ici
-async def reset_item(interaction: discord.Interaction, item_id: int):
+@bot.tree.command(name="reset-item", description="Supprime tous les items de la boutique")
+async def reset_item(interaction: discord.Interaction):
     if interaction.user.id != ISEY_ID:
         return await interaction.response.send_message("❌ Tu n'as pas la permission d'utiliser cette commande.", ephemeral=True)
 
-    item = collection16.find_one({"id": item_id})
-    if not item:
-        return await interaction.response.send_message(f"❌ Aucun item trouvé avec l'ID {item_id}.", ephemeral=True)
-
-    # Suppression de l'item dans la base de données
-    collection16.delete_one({"id": item_id})
+    deleted = collection16.delete_many({})  # Supprime tous les documents de la collection
 
     return await interaction.response.send_message(
-        f"✅ L'item **{item['title']}** a bien été supprimé de la boutique.", ephemeral=True
+        f"🗑️ {deleted.deleted_count} item(s) ont été supprimés de la boutique.", ephemeral=True
     )
 
 #-------------------------------------------------------- Badges
