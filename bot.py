@@ -1187,14 +1187,6 @@ async def item_autocomplete(interaction: discord.Interaction, current: str):
     # On limite à 25 résultats max (Discord ne permet pas plus)
     return results[:25]
 
-async def check_requirements(user: discord.Member, requirements: dict):
-    role_id = requirements.get("role_id")
-    if role_id:
-        role = discord.utils.get(user.guild.roles, id=int(role_id))
-        if role and role not in user.roles:
-            return False, f"Tu dois avoir le rôle **{role.name}** pour acheter cet item."
-    return True, None
-
 # Commande d'achat avec recherche par nom d'item
 @bot.tree.command(name="item-buy", description="Achète un item de la boutique via son nom.")
 @app_commands.describe(item_name="Nom de l'item à acheter", quantity="Quantité à acheter (défaut: 1)")
