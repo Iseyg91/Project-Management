@@ -485,87 +485,6 @@ ITEMS = [
             "items": False
         },
         "used": True
-    },
-    {
-        "id": 553,
-        "emoji": "<:haki_v1:1365669380083679252>",
-        "title": "Haki de l’Armement | 𝕀𝕟𝕗𝕖𝕣𝕚𝕖𝕦𝕣",
-        "description": "Offre un collect de 5,000, cooldown de 2 heures.",
-        "price": 100000,
-        "emoji_price": "<:ecoEther:1341862366249357374>",
-        "quantity": 3,
-        "tradeable": True,
-        "usable": True,
-        "use_effect": "Peut évoluer grâce à !!rayleigh. Vous devrez donner 100,000 à Rayleigh pour pouvoir débloquer la possibilité d'acheter le Haki de l'Armement avancé !",
-        "requirements": {},
-        "role_id": 1365698043684327424,
-        "remove_after_purchase": {
-            "roles": False,
-            "items": False
-        },
-        "used": True
-    },
-    {
-        "id": 652,
-        "emoji": "<:haki_v2:1365669343685378160>",
-        "title": "Haki de l’Armement | 𝔸𝕧𝕒𝕟𝕔𝕖",
-        "description": "Offre un collect de 10,000, cooldown de 2 heures.",
-        "price": 100000,
-        "emoji_price": "<:ecoEther:1341862366249357374>",
-        "quantity": 3,
-        "tradeable": True,
-        "usable": True,
-        "use_effect": "???",
-        "requirements": {
-            "role_id": 1365699319163785246
-        },
-        "role_id": 1365389381246124084,
-        "remove_after_purchase": {
-            "roles": False,
-            "items": False
-        },
-        "used": True
-    },
-    {
-        "id": 555,
-        "emoji": "<:haki_v1:1365669380083679252>",
-        "title": "Haki de l’Armement | 𝕀𝕟𝕗𝕖𝕣𝕚𝕖𝕦𝕣",
-        "description": "Permet de connaître l'heure du prochain restock grâce à !!observation. (Cooldown : 1 semaine)",
-        "price": 100000,
-        "emoji_price": "<:ecoEther:1341862366249357374>",
-        "quantity": 3,
-        "tradeable": True,
-        "usable": True,
-        "use_effect": "Peut évoluer grâce à !!rayleigh. Vous devrez donner 100k à Rayleigh pour débloquer la possibilité d'acheter le Haki de l'Observation avancé !",
-        "requirements": {},
-        "role_id": 1365698043684327424,
-        "remove_after_purchase": {
-            "roles": False,
-            "items": False
-        },
-        "used": True
-    },
-    {
-        "id": 653,
-        "emoji": "<:haki_v2:1365669343685378160>",
-        "title": "Haki de l’Observation | 𝔸𝕧𝕒𝕟𝕔𝕖",
-        "description": "Permet de connaître l'heure et le contenu du prochain restock grâce à !!Wobservation. (Cooldown : 2 semaines)",
-        "price": 100000,
-        "emoji_price": "<:ecoEther:1341862366249357374>",
-        "quantity": 3,
-        "tradeable": True,
-        "usable": True,
-        "use_effect": "???",
-        "requirements": {
-            "role_id": 1365699245377847448
-        },
-        "role_id": 1365389687618928885,
-        "remove_after_purchase": {
-            "roles": False,
-            "items": False
-        },
-        "used": True
-    },
     {
         "id": 888,
         "emoji": "<:infini:1363615948090638490>",
@@ -604,6 +523,106 @@ ITEMS = [
         },
         "used": True
     },
+    },
+    {
+        "id": 553,
+        "emoji": "<:haki_v1:1365669380083679252>",
+        "title": "Haki de l’Armement | 𝕀𝕟𝕗𝕖𝕣𝕚𝕖𝕦𝕣",
+        "description": "Offre un collect de 5,000, cooldown de 2 heures.",
+        "price": 150000,
+        "emoji_price": "<:ecoEther:1341862366249357374>",
+        "quantity": 3,
+        "tradeable": True,
+        "usable": True,
+        "use_effect": "Peut évoluer grâce à !!rayleigh. Vous devrez donner 100,000 à Rayleigh pour pouvoir débloquer la possibilité d'acheter le Haki de l'Armement avancé !",
+        "requirements": {},
+        "role_id": 1365698043684327424,
+        "remove_after_purchase": {
+            "roles": False,
+            "items": False
+        },
+        "used": True
+    },
+    {
+        "id": 652,
+        "emoji": "<:haki_v2:1365669343685378160>",
+        "title": "Haki de l’Armement | 𝔸𝕧𝕒𝕟𝕔𝕖",
+        "description": "Offre un collect de 10,000, cooldown de 2 heures.",
+        "price": 150000,
+        "emoji_price": "<:ecoEther:1341862366249357374>",
+        "quantity": 3,
+        "tradeable": True,
+        "usable": True,
+        "use_effect": "???",
+        "requirements": {
+            "role_id": 1365699319163785246
+        },
+        "role_id": 1365389381246124084,
+        "remove_after_purchase": {
+            "roles": False,
+            "items": False
+        },
+        "used": True
+    },
+    {
+        "id": 555,
+        "emoji": "<:haki_v1:1365669380083679252>",
+        "title": "Haki de l’Armement | 𝕀𝕟𝕗𝕖𝕣𝕚𝕖𝕦𝕣",
+        "description": "Permet de connaître l'heure du prochain restock grâce à !!observation. (Cooldown : 1 semaine)",
+        "price": 150000,
+        "emoji_price": "<:ecoEther:1341862366249357374>",
+        "quantity": 3,
+        "tradeable": True,
+        "usable": True,
+        "use_effect": "Peut évoluer grâce à !!rayleigh. Vous devrez donner 100k à Rayleigh pour débloquer la possibilité d'acheter le Haki de l'Observation avancé !",
+        "requirements": {},
+        "role_id": 1365698043684327424,
+        "remove_after_purchase": {
+            "roles": False,
+            "items": False
+        },
+        "used": True
+    },
+    {
+        "id": 653,
+        "emoji": "<:haki_v2:1365669343685378160>",
+        "title": "Haki de l’Observation | 𝔸𝕧𝕒𝕟𝕔𝕖",
+        "description": "Permet de connaître l'heure et le contenu du prochain restock grâce à !!Wobservation. (Cooldown : 2 semaines)",
+        "price": 150000,
+        "emoji_price": "<:ecoEther:1341862366249357374>",
+        "quantity": 3,
+        "tradeable": True,
+        "usable": True,
+        "use_effect": "???",
+        "requirements": {
+            "role_id": 1365699245377847448
+        },
+        "role_id": 1365389687618928885,
+        "remove_after_purchase": {
+            "roles": False,
+            "items": False
+        },
+        "used": True
+    },
+    {
+        "id": 4,
+        "emoji": "<:naturoermite:1363945371448905810>",
+        "title": "Mode Ermite",
+        "description": "Ce mode autrefois maîtrisé par Naruto lui même, il vous confère l’énergie de la nature. Grâce à cela, vous pourrez avoir plus d’ezryn !!!",
+        "price": 150000,
+        "emoji_price": "<:ecoEther:1341862366249357374>",
+        "quantity": 2,
+        "tradeable": True,
+        "usable": True,
+        "use_effect": "Vous donne un collect qui vous donne 5,000 <:ecoEther:1341862366249357374> toute les 2 heures",
+        "requirements": {},
+        "role_id": 1363948445282341135,
+        "remove_after_purchase": {
+            "roles": False,
+            "items": False
+        },
+        "used": True
+    },
     {
         "id": 7,
         "emoji": "<:licence:1363609202211422268>",
@@ -617,25 +636,6 @@ ITEMS = [
         "use_effect": "Donne le rôle licence hunter et donne accès au nen et au quêtes destiné au hunter",
         "requirements": {},
         "role_id": 1363817603713339512,
-        "remove_after_purchase": {
-            "roles": False,
-            "items": False
-        },
-        "used": True
-    },
-    {
-        "id": 4,
-        "emoji": "<:naturoermite:1363945371448905810>",
-        "title": "Mode Ermite",
-        "description": "Ce mode autrefois maîtrisé par Naruto lui même, il vous confère l’énergie de la nature. Grâce à cela, vous pourrez avoir plus d’ezryn !!!",
-        "price": 250000,
-        "emoji_price": "<:ecoEther:1341862366249357374>",
-        "quantity": 2,
-        "tradeable": True,
-        "usable": True,
-        "use_effect": "Vous donne un collect qui vous donne 5,000 <:ecoEther:1341862366249357374> toute les 2 heures",
-        "requirements": {},
-        "role_id": 1363948445282341135,
         "remove_after_purchase": {
             "roles": False,
             "items": False
