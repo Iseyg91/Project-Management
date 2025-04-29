@@ -485,7 +485,6 @@ ITEMS = [
             "items": False
         },
         "used": True
-        }
     },
     {
         "id": 888,
