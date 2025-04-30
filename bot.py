@@ -893,7 +893,7 @@ ITEMS = [
         "use_effect": "Le Nika Nika no Mi permet de créer des ressources, effacer dettes, et avec Gear Fifth, booste tes fonds de 500% et influe sur l'économie des autres.",
         "blocked_roles": [1365316070172393572, 1365311588139274354, 1365313257279062067, 1365311602290851880, 1365313248269828116, 1365311608259346462, 1365313251201519697, 1365311614332571739, 1365313292477927464],
         "requirements": {
-            "role_id": 1365311611019202744
+            "roles": [1365311611019202744]
         },
         "role_id": 1365313292477927464,
         "remove_after_purchase": {
