@@ -1514,7 +1514,7 @@ async def item_buy(interaction: discord.Interaction, item_name: str, quantity: i
         ),
         color=discord.Color.green()
     )
-    await interaction.response.send_message(embed=embed, ephemeral=True)
+    await interaction.response.send_message(embed=embed)
     
 @bot.tree.command(name="item-inventory", description="Affiche l'inventaire d'un utilisateur")
 async def item_inventory(interaction: discord.Interaction, user: discord.User = None):
@@ -2573,6 +2573,42 @@ async def start_rewards(interaction: discord.Interaction):
 
     await interaction.response.send_message(
         f"✅ Le système de rewards a bien été lancé ! Début : <t:{timestamp}:F>",
+        ephemeral=True
+    )
+
+@bot.tree.command(name="end-rewards", description="Définit la date de fin des rewards (réservé à ISEY)")
+async def end_rewards(interaction: discord.Interaction):
+    if interaction.user.id != ISEY_ID:
+        await interaction.response.send_message("❌ Tu n'es pas autorisé à utiliser cette commande.", ephemeral=True)
+        return
+
+    guild_id = interaction.guild.id
+    existing = collection22.find_one({"guild_id": guild_id})
+
+    if not existing:
+        await interaction.response.send_message("⚠️ Aucun début de rewards trouvé. Utilise d'abord `/start-rewards`.", ephemeral=True)
+        return
+
+    if 'end_timestamp' in existing:
+        await interaction.response.send_message(
+            f"⚠️ Les rewards ont déjà été terminés le <t:{int(existing['end_timestamp'])}:F>.",
+            ephemeral=True
+        )
+        return
+
+    now = datetime.utcnow()
+    timestamp = int(now.timestamp())
+
+    collection22.update_one(
+        {"guild_id": guild_id},
+        {"$set": {
+            "end_date": now.isoformat(),
+            "end_timestamp": timestamp
+        }}
+    )
+
+    await interaction.response.send_message(
+        f"✅ Les rewards ont été clôturés !\nPériode : du <t:{existing['start_timestamp']}:F> au <t:{timestamp}:F>",
         ephemeral=True
     )
 
