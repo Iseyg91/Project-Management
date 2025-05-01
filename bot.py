@@ -2729,7 +2729,7 @@ async def give_reward(interaction: discord.Interaction, day: int):
     progress = "█" * days_received + "░" * (total_days - days_received)
     embed.add_field(name="Progression", value=f"{progress} ({days_received}/{total_days})", inline=False)
 
-    await interaction.response.send_message(embed=embed, ephemeral=True)
+    await interaction.response.send_message(embed=embed)
 
 @bot.tree.command(name="end-rewards", description="Définit la date de fin des rewards (réservé à ISEY)")
 async def end_rewards(interaction: discord.Interaction):
