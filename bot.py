@@ -592,8 +592,8 @@ ITEMS = [
     },
     {
         "id": 555,
-        "emoji": "<:haki_v1:1365669380083679252>",
-        "title": "Haki de l’Armement | 𝕀𝕟𝕗𝕖𝕣𝕚𝕖𝕦𝕣",
+        "emoji": "<:observation_v1:1365671377595535431>",
+        "title": "Haki de l’Observation | 𝕀𝕟𝕗𝕖𝕣𝕚𝕖𝕦𝕣",
         "description": "Permet de connaître l'heure du prochain restock grâce à !!observation. (Cooldown : 1 semaine)",
         "price": 150000,
         "emoji_price": "<:ecoEther:1341862366249357374>",
@@ -611,7 +611,7 @@ ITEMS = [
     },
     {
         "id": 653,
-        "emoji": "<:haki_v2:1365669343685378160>",
+        "emoji": "<:observation_v2:1365669364979728554>",
         "title": "Haki de l’Observation | 𝔸𝕧𝕒𝕟𝕔𝕖",
         "description": "Permet de connaître l'heure et le contenu du prochain restock grâce à !!Wobservation. (Cooldown : 2 semaines)",
         "price": 150000,
@@ -1080,7 +1080,178 @@ ITEMS = [
             "items": False
         },
         "used": False
-    }
+    },
+    {
+        "id": 993,
+        "emoji": "<:luffy:1367570815188729877>",
+        "title": "Pièce Luffy",
+        "description": "Une pièce  mystérieuse et brillante, sans utilité apparente pour l'instant, mais qui semble receler un pouvoir caché en attente d'être découvert.",
+        "price": 0,
+        "emoji_price": "<:ecoEther:1341862366249357374>",
+        "quantity": 0,
+        "tradeable": True,
+        "usable": False,
+        "use_effect": "???",
+        "requirements": {},  # Aucun requirement
+        "role_id": None,  # Aucun rôle à donner
+        "remove_after_purchase": {
+            "roles": False,
+            "items": False
+        },
+        "used": False
+    },
+    {
+        "id": 221,
+        "emoji": "<:zoro:1367570671244279912>",
+        "title": "Pièce Zoro",
+        "description": "Une pièce  mystérieuse et brillante, sans utilité apparente pour l'instant, mais qui semble receler un pouvoir caché en attente d'être découvert.",
+        "price": 0,
+        "emoji_price": "<:ecoEther:1341862366249357374>",
+        "quantity": 0,
+        "tradeable": True,
+        "usable": False,
+        "use_effect": "???",
+        "requirements": {},  # Aucun requirement
+        "role_id": None,  # Aucun rôle à donner
+        "remove_after_purchase": {
+            "roles": False,
+            "items": False
+        },
+        "used": False
+    },
+    {
+        "id": 621,
+        "emoji": "<:sanji:1367570434752778270>",
+        "title": "Pièce Sanji",
+        "description": "Une pièce  mystérieuse et brillante, sans utilité apparente pour l'instant, mais qui semble receler un pouvoir caché en attente d'être découvert.",
+        "price": 0,
+        "emoji_price": "<:ecoEther:1341862366249357374>",
+        "quantity": 0,
+        "tradeable": True,
+        "usable": False,
+        "use_effect": "???",
+        "requirements": {},  # Aucun requirement
+        "role_id": None,  # Aucun rôle à donner
+        "remove_after_purchase": {
+            "roles": False,
+            "items": False
+        },
+        "used": False
+    },
+    {
+        "id": 413,
+        "emoji": "<:nami:1367570885661429790>",
+        "title": "Pièce Nami",
+        "description": "Une pièce  mystérieuse et brillante, sans utilité apparente pour l'instant, mais qui semble receler un pouvoir caché en attente d'être découvert.",
+        "price": 0,
+        "emoji_price": "<:ecoEther:1341862366249357374>",
+        "quantity": 0,
+        "tradeable": True,
+        "usable": False,
+        "use_effect": "???",
+        "requirements": {},  # Aucun requirement
+        "role_id": None,  # Aucun rôle à donner
+        "remove_after_purchase": {
+            "roles": False,
+            "items": False
+        },
+        "used": False
+    },
+    {
+        "id": 280,
+        "emoji": "<:usopp:1367570730392223804>",
+        "title": "Pièce Usopp",
+        "description": "Une pièce  mystérieuse et brillante, sans utilité apparente pour l'instant, mais qui semble receler un pouvoir caché en attente d'être découvert.",
+        "price": 0,
+        "emoji_price": "<:ecoEther:1341862366249357374>",
+        "quantity": 0,
+        "tradeable": True,
+        "usable": False,
+        "use_effect": "???",
+        "requirements": {},  # Aucun requirement
+        "role_id": None,  # Aucun rôle à donner
+        "remove_after_purchase": {
+            "roles": False,
+            "items": False
+        },
+        "used": False
+    },
+    {
+        "id": 682,
+        "emoji": "<:chopper:1367570848549965935>",
+        "title": "Pièce Chopper",
+        "description": "Une pièce  mystérieuse et brillante, sans utilité apparente pour l'instant, mais qui semble receler un pouvoir caché en attente d'être découvert.",
+        "price": 0,
+        "emoji_price": "<:ecoEther:1341862366249357374>",
+        "quantity": 0,
+        "tradeable": True,
+        "usable": False,
+        "use_effect": "???",
+        "requirements": {},  # Aucun requirement
+        "role_id": None,  # Aucun rôle à donner
+        "remove_after_purchase": {
+            "roles": False,
+            "items": False
+        },
+        "used": False
+    },
+    {
+        "id": 573,
+        "emoji": "<:robin:1367570558581084231>",
+        "title": "Pièce Robin",
+        "description": "Une pièce  mystérieuse et brillante, sans utilité apparente pour l'instant, mais qui semble receler un pouvoir caché en attente d'être découvert.",
+        "price": 0,
+        "emoji_price": "<:ecoEther:1341862366249357374>",
+        "quantity": 0,
+        "tradeable": True,
+        "usable": False,
+        "use_effect": "???",
+        "requirements": {},  # Aucun requirement
+        "role_id": None,  # Aucun rôle à donner
+        "remove_after_purchase": {
+            "roles": False,
+            "items": False
+        },
+        "used": False
+    },
+    {
+        "id": 132,
+        "emoji": "<:franky:1367570517674033183>",
+        "title": "Pièce Franky",
+        "description": "Une pièce  mystérieuse et brillante, sans utilité apparente pour l'instant, mais qui semble receler un pouvoir caché en attente d'être découvert.",
+        "price": 0,
+        "emoji_price": "<:ecoEther:1341862366249357374>",
+        "quantity": 0,
+        "tradeable": True,
+        "usable": False,
+        "use_effect": "???",
+        "requirements": {},  # Aucun requirement
+        "role_id": None,  # Aucun rôle à donner
+        "remove_after_purchase": {
+            "roles": False,
+            "items": False
+        },
+        "used": False
+    },
+    {
+        "id": 856,
+        "emoji": "<:jinbe:1367570481720332448>",
+        "title": "Pièce Jinbe",
+        "description": "Une pièce  mystérieuse et brillante, sans utilité apparente pour l'instant, mais qui semble receler un pouvoir caché en attente d'être découvert.",
+        "price": 0,
+        "emoji_price": "<:ecoEther:1341862366249357374>",
+        "quantity": 0,
+        "tradeable": True,
+        "usable": False,
+        "use_effect": "???",
+        "requirements": {},  # Aucun requirement
+        "role_id": None,  # Aucun rôle à donner
+        "remove_after_purchase": {
+            "roles": False,
+            "items": False
+        },
+        "used": False
+    },
 ]
 
 # Fonction pour insérer les items dans MongoDB
