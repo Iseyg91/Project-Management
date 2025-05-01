@@ -2751,33 +2751,24 @@ async def give_reward(interaction: discord.Interaction, day: int):
 
     await interaction.response.send_message(embed=embed)
 
-@bot.tree.command(name="zero-rewards", description="Réinitialise les récompenses des utilisateurs ayant déjà réclamé aujourd'hui")
+@bot.tree.command(name="zero-rewards", description="Réinitialise les récompenses de tous les utilisateurs")
 async def zero_rewards(interaction: discord.Interaction):
     # Vérifier si l'utilisateur est ISEY_ID
     if interaction.user.id != 792755123587645461:
         await interaction.response.send_message("Tu n'as pas l'autorisation d'utiliser cette commande.", ephemeral=True)
         return
     
-    # Récupérer la date du jour
-    today = datetime.utcnow().date()
-
     # Parcourir tous les utilisateurs dans la collection de récompenses
     all_users = collection23.find({"rewards_received": {"$exists": True}})
     
     updated_count = 0
     for user_data in all_users:
-        rewards_received = user_data.get("rewards_received", {})
-        # Vérifier si l'utilisateur a réclamé des récompenses aujourd'hui
-        for day, reward in rewards_received.items():
-            # Si l'utilisateur a déjà réclamé la récompense pour le jour actuel
-            if str(today) in day:
-                # Réinitialiser les récompenses de l'utilisateur
-                collection23.update_one(
-                    {"guild_id": user_data["guild_id"], "user_id": user_data["user_id"]},
-                    {"$set": {"rewards_received": {}}}
-                )
-                updated_count += 1
-                break
+        # Réinitialiser les récompenses de l'utilisateur
+        collection23.update_one(
+            {"guild_id": user_data["guild_id"], "user_id": user_data["user_id"]},
+            {"$set": {"rewards_received": {}}}
+        )
+        updated_count += 1
 
     # Répondre avec un message de confirmation
     await interaction.response.send_message(f"Les récompenses ont été réinitialisées pour {updated_count} utilisateur(s).", ephemeral=True)
