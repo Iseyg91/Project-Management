@@ -2607,8 +2607,10 @@ async def end_rewards(interaction: discord.Interaction):
         }}
     )
 
+    updated = collection22.find_one({"guild_id": guild_id})
+
     await interaction.response.send_message(
-        f"✅ Les rewards ont été clôturés !\nPériode : du <t:{existing['start_timestamp']}:F> au <t:{timestamp}:F>",
+        f"✅ Les rewards ont été clôturés !\nPériode : du <t:{updated['start_timestamp']}:F> au <t:{updated['end_timestamp']}:F>",
         ephemeral=True
     )
 
