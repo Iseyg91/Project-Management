@@ -2624,17 +2624,18 @@ async def rewards(interaction: discord.Interaction):
     user_data = collection23.find_one({"guild_id": guild_id, "user_id": user_id})
     received = user_data.get("rewards_received", {}) if user_data else {}
 
+    # Vérifier si la récompense d’aujourd’hui a déjà été récupérée
+    if str(days_elapsed) in received:
+        await interaction.response.send_message("Tu as déjà récupéré ta récompense aujourd'hui.", ephemeral=True)
+        return
+
     # Vérifier si une récompense a été manquée
     for i in range(1, days_elapsed):
         if str(i) not in received:
             await interaction.response.send_message("Tu as manqué un jour. Tu ne peux plus récupérer les récompenses.", ephemeral=True)
             return
 
-    # Vérifier si la récompense d’aujourd’hui a déjà été récupérée
-    if str(days_elapsed) in received:
-        await interaction.response.send_message("Tu as déjà récupéré ta récompense aujourd'hui.", ephemeral=True)
-        return
-
+    # Si toutes les vérifications sont passées, donner la récompense
     await give_reward(interaction, days_elapsed)
 
 # === Fonction pour donner la récompense ===
