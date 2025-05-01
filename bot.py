@@ -1252,6 +1252,25 @@ ITEMS = [
         },
         "used": False
     },
+    {
+        "id": 869,
+        "emoji": "<:brook:1367570627157954660>",
+        "title": "Pièce Brook",
+        "description": "Une pièce  mystérieuse et brillante, sans utilité apparente pour l'instant, mais qui semble receler un pouvoir caché en attente d'être découvert.",
+        "price": 0,
+        "emoji_price": "<:ecoEther:1341862366249357374>",
+        "quantity": 0,
+        "tradeable": True,
+        "usable": False,
+        "use_effect": "???",
+        "requirements": {},  # Aucun requirement
+        "role_id": None,  # Aucun rôle à donner
+        "remove_after_purchase": {
+            "roles": False,
+            "items": False
+        },
+        "used": False
+    },
 ]
 
 # Fonction pour insérer les items dans MongoDB
