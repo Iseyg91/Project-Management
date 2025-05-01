@@ -62,12 +62,12 @@ log_channels = {
 
 # === CONFIGURATION DES RÉCOMPENSES PAR JOUR ===
 daily_rewards = {
-    1: {"coins": 1500, "badge": None, "item": None, "image_url": "https://github.com/Iseyg91/Shadow/blob/main/Season%20Beta/image.1.png?raw=true"},
-    2: {"coins": 2500, "badge": None, "item": None, "image_url": "https://github.com/Iseyg91/Shadow/blob/main/Season%20Beta/image.2.png?raw=true"},
-    3: {"coins": 3500, "badge": 4, "item": None, "image_url": "https://github.com/Iseyg91/Shadow/blob/main/Season%20Beta/image.3.png?raw=true"},
-    4: {"coins": 4500, "badge": None, "item": None, "image_url": "https://github.com/Iseyg91/Shadow/blob/main/Season%20Beta/image.4.png?raw=true"},
+    1: {"coins": 10000, "badge": None, "item": None, "image_url": "https://github.com/Iseyg91/Shadow/blob/main/Season%20Beta/image.1.png?raw=true"},
+    2: {"coins": 15000, "badge": None, "item": None, "image_url": "https://github.com/Iseyg91/Shadow/blob/main/Season%20Beta/image.2.png?raw=true"},
+    3: {"coins": 20000, "badge": 4, "item": None, "image_url": "https://github.com/Iseyg91/Shadow/blob/main/Season%20Beta/image.3.png?raw=true"},
+    4: {"coins": 25000, "badge": None, "item": None, "image_url": "https://github.com/Iseyg91/Shadow/blob/main/Season%20Beta/image.4.png?raw=true"},
     5: {
-        "coins": 5500,
+        "coins": 30000,
         "badge": None,
         "item": None,
         "random_items": [
@@ -84,8 +84,8 @@ daily_rewards = {
         ],
         "image_url": "https://github.com/Iseyg91/Shadow/blob/main/Season%20Beta/image.5.png?raw=true"
     },
-    6: {"coins": 6500, "badge": None, "item": None, "image_url": "https://github.com/Iseyg91/Shadow/blob/main/Season%20Beta/image.6.png?raw=true"},
-    7: {"coins": 7500, "badge": 3, "item": None, "image_url": "https://github.com/Iseyg91/Shadow/blob/main/Season%20Beta/image.7.png?raw=true"}
+    6: {"coins": 40000, "badge": None, "item": None, "image_url": "https://github.com/Iseyg91/Shadow/blob/main/Season%20Beta/image.6.png?raw=true"},
+    7: {"coins": 50000, "badge": 3, "item": None, "image_url": "https://github.com/Iseyg91/Shadow/blob/main/Season%20Beta/image.7.png?raw=true"}
 }
 # Fonction pour créer des embeds formatés
 def create_embed(title, description, color=discord.Color.blue(), footer_text=""):
