@@ -2839,9 +2839,18 @@ async def quetes(interaction: discord.Interaction):
         item_name = item["title"] if item else "Inconnu"
         item_emoji = item["emoji"] if item else ""
 
+        # Si la quête a été réalisée, on la barre et on affiche la personne qui l'a complétée
+        if 'completed_by' in quest:
+            completed_by = quest['completed_by']
+            quest_name = f"~~{quest['nom']}~~"
+            quest_value = f"{quest['description']}\n**Récompense**: {item_name} {item_emoji} + {quest['reward_coins']} <:ecoEther:1341862366249357374>\n**Complétée par**: {completed_by}"
+        else:
+            quest_name = f"🔹 {quest['nom']} (ID: {quest['id']})"
+            quest_value = f"{quest['description']}\n**Récompense**: {item_name} {item_emoji} + {quest['reward_coins']} <:ecoEther:1341862366249357374>"
+
         embed.add_field(
-            name=f"🔹 {quest['nom']} (ID: {quest['id']})",
-            value=f"{quest['description']}\n**Récompense**: {item_name} {item_emoji} + {quest['reward_coins']} <:ecoEther:1341862366249357374>",
+            name=quest_name,
+            value=quest_value,
             inline=False
         )
 
@@ -2876,6 +2885,12 @@ async def quete_faite(interaction: discord.Interaction, quest_id: int, user: dis
     collection.update_one(
         {"guild_id": interaction.guild.id, "user_id": user.id},
         {"$set": {"cash": new_cash}}
+    )
+
+    # Marquer la quête comme complétée par l'utilisateur
+    collection32.update_one(
+        {"id": quest_id},
+        {"$set": {"completed_by": user.name}}
     )
 
     await interaction.response.send_message(
