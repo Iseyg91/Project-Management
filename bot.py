@@ -2552,19 +2552,38 @@ async def start_rewards(interaction: discord.Interaction):
         return
 
     guild_id = interaction.guild.id
+    now = datetime.utcnow()
+    timestamp = int(now.timestamp())
 
-    # Vérifie si une date est déjà enregistrée
     existing = collection22.find_one({"guild_id": guild_id})
+
     if existing:
+        # Cas où un cycle est en cours
+        if 'end_timestamp' not in existing:
+            await interaction.response.send_message(
+                f"⚠️ Un cycle de rewards est déjà en cours depuis le <t:{int(existing['start_timestamp'])}:F>.",
+                ephemeral=True
+            )
+            return
+
+        # Cas où le cycle précédent est terminé → on en relance un nouveau
+        collection22.update_one(
+            {"guild_id": guild_id},
+            {"$set": {
+                "start_date": now.isoformat(),
+                "start_timestamp": timestamp
+            }, "$unset": {
+                "end_date": "",
+                "end_timestamp": ""
+            }}
+        )
         await interaction.response.send_message(
-            f"⚠️ Les rewards ont déjà été démarrés le <t:{int(existing['start_timestamp'])}:F>.",
+            f"🔁 Nouveau cycle de rewards lancé ! Début : <t:{timestamp}:F>",
             ephemeral=True
         )
         return
 
-    now = datetime.utcnow()
-    timestamp = int(now.timestamp())
-
+    # Cas où aucun document n’existe encore → premier lancement
     collection22.insert_one({
         "guild_id": guild_id,
         "start_date": now.isoformat(),
@@ -2572,7 +2591,7 @@ async def start_rewards(interaction: discord.Interaction):
     })
 
     await interaction.response.send_message(
-        f"✅ Le système de rewards a bien été lancé ! Début : <t:{timestamp}:F>",
+        f"✅ Le système de rewards a bien été lancé pour la première fois ! Début : <t:{timestamp}:F>",
         ephemeral=True
     )
 
