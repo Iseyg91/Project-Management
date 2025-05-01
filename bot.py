@@ -2545,6 +2545,13 @@ async def reset_badge(interaction: discord.Interaction, badge_id: int):
 
 #------------------------------------------------ Connexion Season
 
+def get_start_date(guild_id):
+    data = collection22.find_one({"guild_id": guild_id})
+    if not data or "start_date" not in data:
+        return None
+    return datetime.fromisoformat(data["start_date"])
+
+
 @bot.tree.command(name="start-rewards", description="Définit la date de début des rewards (réservé à ISEY)")
 async def start_rewards(interaction: discord.Interaction):
     if interaction.user.id != ISEY_ID:
@@ -2592,44 +2599,6 @@ async def start_rewards(interaction: discord.Interaction):
 
     await interaction.response.send_message(
         f"✅ Le système de rewards a bien été lancé pour la première fois ! Début : <t:{timestamp}:F>",
-        ephemeral=True
-    )
-
-@bot.tree.command(name="end-rewards", description="Définit la date de fin des rewards (réservé à ISEY)")
-async def end_rewards(interaction: discord.Interaction):
-    if interaction.user.id != ISEY_ID:
-        await interaction.response.send_message("❌ Tu n'es pas autorisé à utiliser cette commande.", ephemeral=True)
-        return
-
-    guild_id = interaction.guild.id
-    existing = collection22.find_one({"guild_id": guild_id})
-
-    if not existing:
-        await interaction.response.send_message("⚠️ Aucun début de rewards trouvé. Utilise d'abord `/start-rewards`.", ephemeral=True)
-        return
-
-    if 'end_timestamp' in existing:
-        await interaction.response.send_message(
-            f"⚠️ Les rewards ont déjà été terminés le <t:{int(existing['end_timestamp'])}:F>.",
-            ephemeral=True
-        )
-        return
-
-    now = datetime.utcnow()
-    timestamp = int(now.timestamp())
-
-    collection22.update_one(
-        {"guild_id": guild_id},
-        {"$set": {
-            "end_date": now.isoformat(),
-            "end_timestamp": timestamp
-        }}
-    )
-
-    updated = collection22.find_one({"guild_id": guild_id})
-
-    await interaction.response.send_message(
-        f"✅ Les rewards ont été clôturés !\nPériode : du <t:{updated['start_timestamp']}:F> au <t:{updated['end_timestamp']}:F>",
         ephemeral=True
     )
 
@@ -2761,6 +2730,45 @@ async def give_reward(interaction: discord.Interaction, day: int):
     embed.add_field(name="Progression", value=f"{progress} ({days_received}/{total_days})", inline=False)
 
     await interaction.response.send_message(embed=embed, ephemeral=True)
+
+@bot.tree.command(name="end-rewards", description="Définit la date de fin des rewards (réservé à ISEY)")
+async def end_rewards(interaction: discord.Interaction):
+    if interaction.user.id != ISEY_ID:
+        await interaction.response.send_message("❌ Tu n'es pas autorisé à utiliser cette commande.", ephemeral=True)
+        return
+
+    guild_id = interaction.guild.id
+    existing = collection22.find_one({"guild_id": guild_id})
+
+    if not existing:
+        await interaction.response.send_message("⚠️ Aucun début de rewards trouvé. Utilise d'abord `/start-rewards`.", ephemeral=True)
+        return
+
+    if 'end_timestamp' in existing:
+        await interaction.response.send_message(
+            f"⚠️ Les rewards ont déjà été terminés le <t:{int(existing['end_timestamp'])}:F>.",
+            ephemeral=True
+        )
+        return
+
+    now = datetime.utcnow()
+    timestamp = int(now.timestamp())
+
+    collection22.update_one(
+        {"guild_id": guild_id},
+        {"$set": {
+            "end_date": now.isoformat(),
+            "end_timestamp": timestamp
+        }}
+    )
+
+    updated = collection22.find_one({"guild_id": guild_id})
+
+    await interaction.response.send_message(
+        f"✅ Les rewards ont été clôturés !\nPériode : du <t:{updated['start_timestamp']}:F> au <t:{updated['end_timestamp']}:F>",
+        ephemeral=True
+    )
+
 
 #------------------------------------- Quetes
 
