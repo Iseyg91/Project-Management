@@ -60,7 +60,33 @@ log_channels = {
     "boosts": 1365674914740441158
 }
 
-
+# === CONFIGURATION DES RÉCOMPENSES PAR JOUR ===
+daily_rewards = {
+    1: {"coins": 1500, "badge": None, "item": None, "image_url": "https://github.com/Iseyg91/Shadow/blob/main/Season%20Beta/image.1.png?raw=true"},
+    2: {"coins": 2500, "badge": None, "item": None, "image_url": "https://github.com/Iseyg91/Shadow/blob/main/Season%20Beta/image.2.png?raw=true"},
+    3: {"coins": 3500, "badge": 4, "item": None, "image_url": "https://github.com/Iseyg91/Shadow/blob/main/Season%20Beta/image.3.png?raw=true"},
+    4: {"coins": 4500, "badge": None, "item": None, "image_url": "https://github.com/Iseyg91/Shadow/blob/main/Season%20Beta/image.4.png?raw=true"},
+    5: {
+        "coins": 5500,
+        "badge": None,
+        "item": None,
+        "random_items": [
+            {"id": 763, "chance": 30},   # Bomu
+            {"id": 203, "chance": 25},   # Tetsu
+            {"id": 542, "chance": 20},   # Joki
+            {"id": 352, "chance": 15},   # Gol
+            {"id": 801, "chance": 5},    # Gura
+            {"id": 802, "chance": 3},    # Hie
+            {"id": 803, "chance": 1},    # Yami
+            {"id": 804, "chance": 1},    # Gomu
+            {"id": 805, "chance": 0},    # Nika
+            {"id": 806, "chance": 0}     # Uo
+        ],
+        "image_url": "https://github.com/Iseyg91/Shadow/blob/main/Season%20Beta/image.5.png?raw=true"
+    },
+    6: {"coins": 6500, "badge": None, "item": None, "image_url": "https://github.com/Iseyg91/Shadow/blob/main/Season%20Beta/image.6.png?raw=true"},
+    7: {"coins": 7500, "badge": 3, "item": None, "image_url": "https://github.com/Iseyg91/Shadow/blob/main/Season%20Beta/image.7.png?raw=true"}
+}
 # Fonction pour créer des embeds formatés
 def create_embed(title, description, color=discord.Color.blue(), footer_text=""):
     embed = discord.Embed(title=title, description=description, color=color)
@@ -1992,6 +2018,19 @@ async def reset_item(interaction: discord.Interaction):
         f"🗑️ {deleted.deleted_count} item(s) ont été supprimés de la boutique.", ephemeral=True
     )
 
+@bot.tree.command(name="delete-item", description="Supprime un item spécifique de la boutique")
+@app_commands.describe(item_id="L'identifiant de l'item à supprimer")
+async def delete_item(interaction: discord.Interaction, item_id: str):
+    if interaction.user.id != ISEY_ID:
+        return await interaction.response.send_message("❌ Tu n'as pas la permission d'utiliser cette commande.", ephemeral=True)
+
+    result = collection16.delete_one({"id": item_id})
+
+    if result.deleted_count == 0:
+        return await interaction.response.send_message("❌ Aucun item trouvé avec cet ID.", ephemeral=True)
+
+    return await interaction.response.send_message(f"🗑️ L'item avec l'ID `{item_id}` a été supprimé de la boutique.", ephemeral=True)
+
 #-------------------------------------------------------- Badges
 
 BADGES = [
@@ -2366,6 +2405,42 @@ async def start_rewards(interaction: discord.Interaction):
         ephemeral=True
     )
 
+# === COMMANDE SLASH /rewards ===
+@bot.tree.command(name="rewards", description="Récupère ta récompense quotidienne")
+async def rewards(interaction: discord.Interaction):
+    guild_id = interaction.guild.id
+    user_id = interaction.user.id
+
+    # Vérifier la date de début des récompenses
+    start_date = get_start_date(guild_id)
+    if not start_date:
+        await interaction.response.send_message("Le système de récompenses n'est pas encore configuré.", ephemeral=True)
+        return
+
+    # Calculer le nombre de jours écoulés depuis le début
+    days_elapsed = (datetime.utcnow() - start_date).days + 1
+    if days_elapsed > 7:
+        await interaction.response.send_message("La période de récompenses est terminée.", ephemeral=True)
+        return
+
+    # Récupérer les données de l'utilisateur
+    user_data = collection23.find_one({"guild_id": guild_id, "user_id": user_id})
+    received = user_data.get("rewards_received", {}) if user_data else {}
+
+    # Vérifier si une récompense a été manquée
+    for i in range(1, days_elapsed):
+        if str(i) not in received:
+            await interaction.response.send_message("Tu as manqué un jour. Tu ne peux plus récupérer les récompenses.", ephemeral=True)
+            return
+
+    # Vérifier si la récompense d’aujourd’hui a déjà été récupérée
+    if str(days_elapsed) in received:
+        await interaction.response.send_message("Tu as déjà récupéré ta récompense aujourd'hui.", ephemeral=True)
+        return
+
+    await give_reward(interaction, days_elapsed)
+
+# === Fonction pour donner la récompense ===
 async def give_reward(interaction: discord.Interaction, day: int):
     reward = daily_rewards.get(day)
     if not reward:
@@ -2375,6 +2450,18 @@ async def give_reward(interaction: discord.Interaction, day: int):
     coins = reward.get("coins", 0)
     badge = reward.get("badge")
     item = reward.get("item")
+    random_items = reward.get("random_items")
+
+    # Si random_items est défini, choisir un item au hasard en fonction des chances
+    if random_items and isinstance(random_items, list):
+        total_chance = sum(entry["chance"] for entry in random_items)  # Somme des chances
+        roll = random.uniform(0, total_chance)  # Tirage au sort entre 0 et la somme totale des chances
+        cumulative_chance = 0
+        for entry in random_items:
+            cumulative_chance += entry["chance"]
+            if roll <= cumulative_chance:  # Si le tirage est inférieur ou égal à la chance cumulative
+                item = entry["id"]  # Choisir cet item
+                break
 
     # === Récompense enregistrée (collection23) ===
     user_data = collection23.find_one({"guild_id": interaction.guild.id, "user_id": interaction.user.id})
@@ -2415,8 +2502,9 @@ async def give_reward(interaction: discord.Interaction, day: int):
             )
 
     # === Item (collection17) ===
+    item_config = None
     if item:
-        item_config = collection18.find_one({"id": item})  # Tu peux adapter si l'item vient d'ailleurs
+        item_config = collection18.find_one({"id": item})
         if item_config:
             collection17.insert_one({
                 "guild_id": interaction.guild.id,
@@ -2437,7 +2525,7 @@ async def give_reward(interaction: discord.Interaction, day: int):
     embed.add_field(name="Coins", value=f"{coins} <:ecoEther:1341862366249357374>", inline=False)
     if badge:
         embed.add_field(name="Badge", value=f"Badge ID {badge}", inline=False)
-    if item:
+    if item and item_config:
         embed.add_field(name="Item", value=f"{item_config.get('title', 'Nom inconnu')} {item_config.get('emoji', '')} (ID: {item})", inline=False)
     embed.set_image(url=reward["image_url"])
 
@@ -2445,42 +2533,6 @@ async def give_reward(interaction: discord.Interaction, day: int):
     embed.add_field(name="Progression", value=f"{progress} ({days_received}/{total_days})", inline=False)
 
     await interaction.response.send_message(embed=embed, ephemeral=True)
-
-# === COMMANDE SLASH /rewards ===
-@bot.tree.command(name="rewards", description="Récupère ta récompense quotidienne")
-async def rewards(interaction: discord.Interaction):
-    guild_id = interaction.guild.id
-    user_id = interaction.user.id
-
-    # Vérifier la date de début des récompenses
-    start_date = get_start_date(guild_id)
-    if not start_date:
-        await interaction.response.send_message("Le système de récompenses n'est pas encore configuré.", ephemeral=True)
-        return
-
-    # Calculer le nombre de jours écoulés depuis le début
-    days_elapsed = (datetime.utcnow() - start_date).days + 1
-    if days_elapsed > 7:
-        await interaction.response.send_message("La période de récompenses est terminée.", ephemeral=True)
-        return
-
-    # Récupérer les données de l'utilisateur
-    user_data = collection23.find_one({"guild_id": guild_id, "user_id": user_id})
-    received = user_data.get("rewards_received", {}) if user_data else {}
-
-    # Vérifier si une récompense a été manquée
-    for i in range(1, days_elapsed):
-        if str(i) not in received:
-            await interaction.response.send_message("Tu as manqué un jour. Tu ne peux plus récupérer les récompenses.", ephemeral=True)
-            return
-
-    # Vérifier si la récompense d’aujourd’hui a déjà été récupérée
-    if str(days_elapsed) in received:
-        await interaction.response.send_message("Tu as déjà récupéré ta récompense aujourd'hui.", ephemeral=True)
-        return
-
-    # Donner la récompense pour le jour actuel
-    await give_reward(interaction, days_elapsed)
 
 #------------------------------------- Quetes
 
@@ -2781,7 +2833,6 @@ async def id_random(interaction: discord.Interaction):
             await interaction_button.response.edit_message(embed=new_embed)
 
     await interaction.response.send_message(embed=embed, view=RandomIDView())
-
 
 # Token pour démarrer le bot (à partir des secrets)
 # Lancer le bot avec ton token depuis l'environnement  
