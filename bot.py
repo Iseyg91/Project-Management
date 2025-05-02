@@ -3127,6 +3127,24 @@ async def id_random(interaction: discord.Interaction):
 
     await interaction.response.send_message(embed=embed, view=RandomIDView())
 
+@bot.hybrid_command(
+    name="uptime",
+    description="Affiche l'uptime du bot."
+)
+async def uptime(ctx):
+    uptime_seconds = round(time.time() - start_time)
+    days = uptime_seconds // (24 * 3600)
+    hours = (uptime_seconds % (24 * 3600)) // 3600
+    minutes = (uptime_seconds % 3600) // 60
+    seconds = uptime_seconds % 60
+    embed = discord.Embed(
+        title="Uptime du bot",
+        description=f"Le bot est en ligne depuis : {days} jours, {hours} heures, {minutes} minutes, {seconds} secondes",
+        color=discord.Color.blue()
+    )
+    embed.set_footer(text=f"♥️by Iseyg", icon_url=ctx.author.avatar.url)
+    await ctx.send(embed=embed)
+
 # Token pour démarrer le bot (à partir des secrets)
 # Lancer le bot avec ton token depuis l'environnement  
 keep_alive()
