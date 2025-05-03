@@ -2282,7 +2282,7 @@ BADGES = [
         "used": False
     },
     {
-        "id": 3,
+        "id": 4,
         "emoji": "<:luffy:1364713438768533585>",
         "title": "Badge Luffy",
         "description": "Badge Collector.",
