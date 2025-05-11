@@ -84,7 +84,7 @@ daily_rewards = {
         ],
         "image_url": "https://github.com/Iseyg91/Shadow/blob/main/Season%20Beta/image.5.png?raw=true"
     },
-    6: {"coins": 40000, "badge": None, "item": None, "image_url": "https://github.com/Iseyg91/Shadow/blob/main/Season%20Beta/image.6.png?raw=true"},
+    6: {"coins": 0000, "badge": None, "item": None, "image_url": "https://github.com/Iseyg91/Shadow/blob/main/Season%20Beta/image.6.png?raw=true"},
     7: {"coins": 50000, "badge": 3, "item": None, "image_url": "https://github.com/Iseyg91/Shadow/blob/main/Season%20Beta/image.7.png?raw=true"}
 }
 # Fonction pour créer des embeds formatés
