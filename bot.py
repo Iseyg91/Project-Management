@@ -1731,28 +1731,27 @@ async def item_use(interaction: discord.Interaction, item_id: int):
         return await interaction.response.send_message(embed=embed)
 
     # Vérification des rôles bloquants
-# Vérification des rôles bloquants
-if item_data.get("blocked_roles"):
-    blocked_roles = item_data["blocked_roles"]
-    
-    # Compter combien de rôles bloquants l'utilisateur possède
-    user_blocked_roles = [role for role in user.roles if role.id in blocked_roles]
-    
-    # Vérification si l'utilisateur a le rôle spécial qui permet de dépasser la limite
-    special_role_id = 1365310665417556011
-    limit = 1  # Limite par défaut si l'utilisateur n'a pas le rôle spécial
-    
-    if special_role_id in [role.id for role in user.roles]:
-        limit = 2  # Si l'utilisateur a le rôle spécial, on augmente la limite à 2
+    if item_data.get("blocked_roles"):
+        blocked_roles = item_data["blocked_roles"]
+        
+        # Compter combien de rôles bloquants l'utilisateur possède
+        user_blocked_roles = [role for role in user.roles if role.id in blocked_roles]
+        
+        # Vérification si l'utilisateur a le rôle spécial qui permet de dépasser la limite
+        special_role_id = 1365310665417556011
+        limit = 1  # Limite par défaut si l'utilisateur n'a pas le rôle spécial
+        
+        if special_role_id in [role.id for role in user.roles]:
+            limit = 2  # Si l'utilisateur a le rôle spécial, on augmente la limite à 2
 
-    # Si l'utilisateur a trop de rôles bloquants (>= limite), on bloque l'utilisation
-    if len(user_blocked_roles) >= limit:
-        embed = discord.Embed(
-            title="<:classic_x_mark:1362711858829725729> Utilisation bloquée",
-            description="Tu ne peux pas utiliser cet item en raison de tes rôles bloquants.",
-            color=discord.Color.red()
-        )
-        return await interaction.response.send_message(embed=embed)
+        # Si l'utilisateur a trop de rôles bloquants (>= limite), on bloque l'utilisation
+        if len(user_blocked_roles) >= limit:
+            embed = discord.Embed(
+                title="<:classic_x_mark:1362711858829725729> Utilisation bloquée",
+                description="Tu ne peux pas utiliser cet item en raison de tes rôles bloquants.",
+                color=discord.Color.red()
+            )
+            return await interaction.response.send_message(embed=embed)
 
     # Si aucun rôle ne bloque, continuer normalement (comme dans ton code actuel)
     # Supprime un exemplaire dans l'inventaire
