@@ -136,6 +136,7 @@ collection25 = db['delta_bl'] #Stock les Bl Delta
 collection26 = db['alerte'] #Stock les Salons Alerte
 collection27 = db['guild_troll'] #Stock les serveur ou les commandes troll sont actif ou inactif
 collection28 = db['sensible'] #Stock les mots sensibles actif des serveurs
+collection29 = db['delta_invite'] #Stock les invitation des utilisateurs
 
 # --- Charger les paramètres du serveur dynamiquement ---
 def load_guild_settings(guild_id: int) -> dict:
@@ -172,7 +173,8 @@ def load_guild_settings(guild_id):
     alerte_data = collection26.find_one({"guild_id": guild_id}) or {}
     guild_troll_data = collection27.find_one({"guild_id": guild_id}) or {}
     sensible_data = collection28.find_one({"guild_id": guild_id}) or {}
-    
+    delta_invite_data = collection29.find_one({"guild_id": guild_id}) or {}
+
     # Débogage : Afficher les données de setup
     print(f"Setup data for guild {guild_id}: {setup_data}")
 
@@ -204,7 +206,8 @@ def load_guild_settings(guild_id):
         "delta_bl": delta_bl_data,
         "alerte": alerte_data,
         "guild_troll": guild_troll_data,
-        "sensible": sensible_data
+        "sensible": sensible_data,
+        "delta_invite": delta_invite_data
     }
 
     return combined_data
@@ -1208,27 +1211,46 @@ async def list_clients(interaction: discord.Interaction):
         traceback.print_exc()
         await interaction.followup.send("⚠️ Une erreur est survenue pendant l'affichage.")
 
-@bot.tree.command(name="invite", description="Affiche le nombre d'invitations d'un membre")
+
+@bot.tree.command(name="invite", description="Affiche les stats d'invitations d'un membre")
 @app_commands.describe(user="Le membre dont tu veux voir les invitations")
 async def invite(interaction: discord.Interaction, user: discord.User = None):
+    start = time.time()
     member = user or interaction.user
 
-    # Récupérer toutes les invitations du serveur
-    invites = await interaction.guild.invites()
-    user_invites = [invite for invite in invites if invite.inviter == member]
+    data = collection29.find_one({
+        "guild_id": interaction.guild.id,
+        "user_id": member.id
+    })
 
-    total_uses = sum(invite.uses for invite in user_invites)
+    total = data.get("total", 0)
+    left = data.get("left", 0)
+    fake = data.get("fake", 0)
+    valid = total - left - fake
 
-    # Embed propre
+    end = time.time()
+    ms = round((end - start) * 1000)
+
+    now = datetime.now().strftime("%d/%m/%Y à %Hh%M")
+
     embed = discord.Embed(
-        title=f"📨 Invitations de {member.display_name}",
-        description=f"{member.mention} a **{total_uses}** invitation(s) sur ce serveur.",
+        title=f"📊 Statistiques d'invites de {member.display_name}",
+        description=f"Votre compteur d'invitations a été généré en **{ms}ms**\n\n"
+                    f":white_check_mark: **{valid}** invités\n"
+                    f":x: **{left}** partis\n"
+                    f":poop: **{fake}** invalidées\n\n"
+                    f"Vous avez actuellement **{total} invitations** ! :clap:",
         color=discord.Color.purple()
     )
+
     embed.set_thumbnail(url=member.display_avatar.url)
-    embed.set_footer(text=f"Demandé par {interaction.user.display_name}", icon_url=interaction.user.display_avatar.url)
+    embed.set_footer(
+        text=f"{bot.user.name} • Demandé par {interaction.user.display_name} • {now}",
+        icon_url=bot.user.display_avatar.url
+    )
 
     await interaction.response.send_message(embed=embed)
+
 # Token pour démarrer le bot (à partir des secrets)
 # Lancer le bot avec ton token depuis l'environnement  
 keep_alive()
