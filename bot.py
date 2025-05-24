@@ -282,11 +282,6 @@ async def on_error(event, *args, **kwargs):
     else:
         print("Erreur : Le type de l'objet n'est pas pris en charge pour l'envoi du message.")
 #-------------------------------------------------------------------------- Bot Event:
-# Nécessaire pour que le bouton fonctionne après redémarrage
-@bot.event
-async def setup_hook():
-    bot.add_view(UrgenceView(user_id=0))  # Pour enregistrer la view même si l'urgence est vide
-
 @bot.event
 async def on_message_delete(message):
     if message.author.bot:
