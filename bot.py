@@ -325,37 +325,6 @@ async def on_message_edit(before, after):
 async def on_member_join(member):
     guild_id = str(member.guild.id)
 
-    # Récupérer les données de protection pour le serveur
-    protection_data = await get_protection_data(guild_id)
-
-    # Vérifier si l'anti-bot est activé dans la base de données
-    if protection_data.get("anti_bot") == "activer":
-        # Vérifier si le membre est un bot
-        if member.bot:
-            # Récupérer les données de la whitelist des bots
-            whitelist_data = await collection19.find_one({"guild_id": guild_id})  # Utilisation de la collection19 pour la whitelist
-
-            # Vérifier si le bot est dans la whitelist
-            if whitelist_data and str(member.id) in whitelist_data.get("bots", []):
-                print(f"[Protection Anti-Bot] Le bot {member} est dans la whitelist, aucune action entreprise.")
-                return  # Ignorer le bot s'il est dans la whitelist
-
-            try:
-                # Si ce n'est pas un bot whitelisté, on le kick ou le ban selon les permissions
-                if member.guild.me.guild_permissions.ban_members:
-                    await member.ban(reason="Bot détecté et banni car l'anti-bot est activé.")
-                    print(f"[Protection Anti-Bot] {member} a été banni car c'est un bot et l'anti-bot est activé.")
-                elif member.guild.me.guild_permissions.kick_members:
-                    await member.kick(reason="Bot détecté et kické car l'anti-bot est activé.")
-                    print(f"[Protection Anti-Bot] {member} a été kické car c'est un bot et l'anti-bot est activé.")
-                else:
-                    print(f"[Protection Anti-Bot] Le bot n'a pas les permissions nécessaires pour bannir ou kick {member}.")
-            except discord.Forbidden:
-                print(f"[Protection Anti-Bot] Le bot n'a pas les permissions pour bannir ou kick {member}.")
-            except Exception as e:
-                print(f"[Protection Anti-Bot] Erreur lors du traitement du bot : {e}")
-            return  # Arrêter l'exécution du reste du code si c'est un bot et que l'anti-bot est activé
-
     # Vérifie si le membre a rejoint le serveur Project : Delta
     PROJECT_DELTA = 1359963854200639498
     if member.guild.id == PROJECT_DELTA:
@@ -409,57 +378,9 @@ async def on_member_join(member):
 
                 await channel.send(embed=embed)
 
-kick_times = defaultdict(list)
-
 @bot.event
 async def on_member_remove(member: discord.Member):
     guild_id = str(member.guild.id)
-
-    # Vérifier les permissions du bot avant de continuer
-    if not member.guild.me.guild_permissions.view_audit_log:
-        print("Le bot n'a pas la permission de voir les logs d'audit.")
-        return
-
-    # Vérifier l'événement de kick via les logs d'audit
-    async for entry in member.guild.audit_logs(limit=1, action=discord.AuditLogAction.kick):
-        if entry.target.id == member.id and (discord.utils.utcnow() - entry.created_at).total_seconds() < 5:
-            # Récupère les données de protection
-            protection_data = await get_protection_data(guild_id)
-
-            # Si la protection anti-masskick est activée
-            if protection_data.get("anti_masskick") != "activer":
-                return
-
-            author_id = entry.user.id
-
-            # Récupérer les utilisateurs whitelistés
-            whitelist_data = await collection19.find_one({"guild_id": guild_id})  # Utilisation de la collection19 pour la whitelist
-            if whitelist_data and str(author_id) in whitelist_data.get("users", []):
-                print(f"{entry.user.name} est dans la whitelist, action ignorée.")
-                return  # Si l'auteur du kick est dans la whitelist, on ignore la protection
-
-            current_time = time.time()
-
-            # Enregistrer le timestamp du kick effectué par l'auteur
-            kick_times[author_id].append(current_time)
-
-            # Ne garder que les kicks effectués dans les 10 dernières secondes
-            kick_times[author_id] = [t for t in kick_times[author_id] if current_time - t < 10]
-
-            # Si 2 kicks ont été effectués en moins de 10 secondes
-            if len(kick_times[author_id]) >= 2:
-                try:
-                    # Sanctionner l'auteur du masskick en le bannissant
-                    await member.guild.ban(entry.user, reason="Masskick détecté (2 kicks en moins de 10s)")
-                    await member.guild.system_channel.send(
-                        f"⚠️ **Masskick détecté !** {entry.user.mention} a été banni pour avoir expulsé plusieurs membres en peu de temps."
-                    )
-                    print(f"[Masskick détecté] {entry.user.name} a été banni.")
-                except discord.Forbidden:
-                    print(f"[Erreur Masskick] Le bot n'a pas la permission de bannir {entry.user.name}.")
-                except Exception as e:
-                    print(f"[Erreur Masskick] : {e}")
-                return  # Arrêter l'exécution si un masskick est détecté
 
     # Traitement du départ de membre pour un serveur spécifique (PROJECT_DELTA)
     if member.guild.id == PROJECT_DELTA:
@@ -553,49 +474,6 @@ async def on_member_update(before, after):
 @bot.event
 async def on_guild_role_create(role):
     guild_id = str(role.guild.id)
-    protection_data = await get_protection_data(guild_id)
-
-    if protection_data.get("anti_createrole") == "activer":
-        # Vérifier les permissions du bot
-        if not role.guild.me.guild_permissions.view_audit_log or not role.guild.me.guild_permissions.manage_roles:
-            print("Le bot n'a pas les permissions nécessaires pour lire les logs ou supprimer le rôle.")
-            return
-
-        # Chercher qui a créé le rôle dans les logs d'audit
-        async for entry in role.guild.audit_logs(limit=1, action=discord.AuditLogAction.role_create):
-            if (discord.utils.utcnow() - entry.created_at).total_seconds() < 5:
-                user = entry.user
-
-                # Vérification de la whitelist
-                whitelist_data = await collection19.find_one({"guild_id": guild_id})
-                wl_ids = whitelist_data.get("users", []) if whitelist_data else []
-
-                if str(user.id) in wl_ids:
-                    print(f"[Anti-createrole] Rôle créé par {user} (whitelist). Action ignorée.")
-                    return
-
-                try:
-                    await role.delete(reason="Protection anti-création de rôle activée.")
-                    print(f"🔒 Le rôle {role.name} a été supprimé (créé par {user}) à cause de la protection.")
-
-                    # Envoyer un log propre
-                    log_channel = get_log_channel(role.guild, "roles")
-                    if log_channel:
-                        embed = discord.Embed(
-                            title="🚫 Rôle Supprimé (Protection)",
-                            description=f"Le rôle **{role.name}** a été supprimé car créé par **{user.mention}** alors que la protection anti-création est activée.",
-                            color=discord.Color.red()
-                        )
-                        embed.add_field(name="ID du rôle", value=role.id, inline=False)
-                        embed.add_field(name="Créateur", value=f"{user} ({user.id})", inline=False)
-                        embed.timestamp = discord.utils.utcnow()
-                        await log_channel.send(embed=embed)
-                except discord.Forbidden:
-                    print(f"[Anti-createrole] Pas les permissions pour supprimer le rôle {role.name}.")
-                except Exception as e:
-                    print(f"[Anti-createrole] Erreur lors de la suppression de {role.name} : {e}")
-                return
-
     # Log classique si protection désactivée
     if role.guild.id == PROJECT_DELTA:
         log_channel = get_log_channel(role.guild, "roles")
@@ -617,62 +495,6 @@ async def on_guild_role_create(role):
 @bot.event
 async def on_guild_role_delete(role):
     guild_id = str(role.guild.id)
-    protection_data = await get_protection_data(guild_id)
-
-    if protection_data.get("anti_deleterole") == "activer":
-        if not role.guild.me.guild_permissions.view_audit_log or not role.guild.me.guild_permissions.manage_roles:
-            print("Le bot n'a pas les permissions nécessaires pour cette protection.")
-            return
-
-        # Chercher qui a supprimé le rôle
-        async for entry in role.guild.audit_logs(limit=1, action=discord.AuditLogAction.role_delete):
-            if (discord.utils.utcnow() - entry.created_at).total_seconds() < 5:
-                user = entry.user
-
-                # Vérification de la whitelist
-                whitelist_data = await collection19.find_one({"guild_id": guild_id})
-                wl_ids = whitelist_data.get("users", []) if whitelist_data else []
-
-                if str(user.id) in wl_ids:
-                    print(f"[Anti-deleterole] Suppression par {user} (whitelist). Ignorée.")
-                    return
-                try:
-                    # Recréation du rôle
-                    new_role = await role.guild.create_role(
-                        name=role.name,
-                        permissions=role.permissions,
-                        color=role.color,
-                        mentionable=role.mentionable,
-                        hoist=role.hoist,
-                        reason="Protection anti-suppression de rôle activée."
-                    )
-                    print(f"🔁 Rôle {role.name} recréé suite à suppression par {user}.")
-
-                    # Réattribution aux membres
-                    for member in role.guild.members:
-                        if role.id in [r.id for r in member.roles]:
-                            try:
-                                await member.add_roles(new_role, reason="Rôle recréé (anti-suppression)")
-                                print(f"Rôle {new_role.name} réattribué à {member.name}.")
-                            except Exception as e:
-                                print(f"Erreur pour {member.name} : {e}")
-
-                    # Log dans salon dédié
-                    log_channel = get_log_channel(role.guild, "roles")
-                    if log_channel:
-                        embed = discord.Embed(
-                            title="🚨 Rôle Supprimé & Recréé",
-                            description=f"Le rôle **{role.name}** a été supprimé par {user.mention} et automatiquement recréé.",
-                            color=discord.Color.red()
-                        )
-                        embed.add_field(name="Auteur", value=f"{user} ({user.id})", inline=False)
-                        embed.add_field(name="ID du rôle original", value=str(role.id), inline=False)
-                        embed.add_field(name="Nouveau rôle", value=f"{new_role.name} ({new_role.id})", inline=False)
-                        embed.timestamp = discord.utils.utcnow()
-                        await log_channel.send(embed=embed)
-                except Exception as e:
-                    print(f"Erreur lors de la recréation du rôle {role.name} : {e}")
-                return
 
     # Log classique si suppression sans protection ou whitelistée
     if role.guild.id == PROJECT_DELTA:
@@ -720,48 +542,6 @@ async def on_guild_role_update(before, after):
 @bot.event
 async def on_guild_channel_create(channel):
     guild_id = str(channel.guild.id)
-
-    # Protection anti-création de salon
-    protection_data = await get_protection_data(guild_id)
-    if protection_data.get("anti_createchannel") == "activer":
-        if not channel.guild.me.guild_permissions.view_audit_log or not channel.guild.me.guild_permissions.manage_channels:
-            print("Le bot n'a pas les permissions nécessaires (audit log / gérer les salons).")
-            return
-
-        # Obtenir l'utilisateur ayant créé le salon via les logs d’audit
-        async for entry in channel.guild.audit_logs(limit=1, action=discord.AuditLogAction.channel_create):
-            if (discord.utils.utcnow() - entry.created_at).total_seconds() < 5:
-                user = entry.user
-
-                # Vérifier s’il est dans la whitelist
-                whitelist_data = await collection19.find_one({"guild_id": guild_id})
-                wl_ids = whitelist_data.get("users", []) if whitelist_data else []
-
-                if str(user.id) in wl_ids:
-                    print(f"{user} est dans la whitelist, création de salon ignorée.")
-                    return  # Ne rien faire s'il est dans la whitelist
-
-                # Supprimer le salon
-                try:
-                    await channel.delete(reason="Protection anti-création de salon activée.")
-                    print(f"Le salon {channel.name} a été supprimé (créé par {user}).")
-
-                    # Log dans le salon prévu
-                    log_channel = get_log_channel(channel.guild, "channels")
-                    if log_channel:
-                        embed = discord.Embed(
-                            title="⚠️ Salon supprimé",
-                            description=f"Le salon **{channel.name}** créé par **{user.mention}** a été supprimé (anti-create).",
-                            color=discord.Color.red()
-                        )
-                        embed.add_field(name="ID du Salon", value=str(channel.id), inline=False)
-                        embed.set_footer(text=f"Créé par : {user} ({user.id})")
-                        embed.timestamp = discord.utils.utcnow()
-                        await log_channel.send(embed=embed)
-                except Exception as e:
-                    print(f"Erreur lors de la suppression du salon ou de l’envoi du log : {e}")
-                return
-
     # Log de création si la protection n’est pas activée
     if channel.guild.id == PROJECT_DELTA:
         channel_log = get_log_channel(channel.guild, "channels")
@@ -783,56 +563,6 @@ async def on_guild_channel_create(channel):
 @bot.event
 async def on_guild_channel_delete(channel):
     guild_id = str(channel.guild.id)
-
-    protection_data = await get_protection_data(guild_id)
-    if protection_data.get("anti_deletechannel") == "activer":
-        # Vérifier les permissions nécessaires
-        if not channel.guild.me.guild_permissions.view_audit_log or not channel.guild.me.guild_permissions.manage_channels:
-            print("Le bot n'a pas les permissions nécessaires pour lire les logs ou recréer le salon.")
-            return
-
-        # Récupération de l'auteur de la suppression via audit logs
-        async for entry in channel.guild.audit_logs(limit=1, action=discord.AuditLogAction.channel_delete):
-            if (discord.utils.utcnow() - entry.created_at).total_seconds() < 5:
-                user = entry.user
-
-                # Vérifier la whitelist
-                whitelist_data = await collection19.find_one({"guild_id": guild_id})
-                wl_ids = whitelist_data.get("users", []) if whitelist_data else []
-
-                if str(user.id) in wl_ids:
-                    print(f"[Anti-deletechannel] Salon supprimé par {user} (whitelist). Action ignorée.")
-                    return  # Ne rien faire s’il est whitelisté
-
-                # Recréer le salon supprimé
-                try:
-                    new_channel = await channel.guild.create_text_channel(
-                        name=channel.name,
-                        category=channel.category,
-                        reason="Protection anti-suppression de salon activée."
-                    )
-                    print(f"🔒 Salon {channel.name} recréé suite à la suppression par {user}.")
-
-                    # Recréer les permissions
-                    for target, overwrite in channel.overwrites.items():
-                        await new_channel.set_permissions(target, overwrite=overwrite)
-
-                    # Envoyer un log
-                    log_channel = get_log_channel(channel.guild, "channels")
-                    if log_channel:
-                        embed = discord.Embed(
-                            title="🚨 Salon recréé (anti-delete)",
-                            description=f"Le salon **{channel.name}** a été recréé suite à une suppression non autorisée par **{user.mention}**.",
-                            color=discord.Color.orange()
-                        )
-                        embed.add_field(name="Utilisateur", value=f"{user} ({user.id})", inline=False)
-                        embed.add_field(name="ID du salon original", value=str(channel.id), inline=False)
-                        embed.timestamp = discord.utils.utcnow()
-                        await log_channel.send(embed=embed)
-                except Exception as e:
-                    print(f"[Erreur Anti-deletechannel] Erreur lors de la recréation ou du log : {e}")
-                return
-
     # Log normal de suppression si protection non activée
     if channel.guild.id == PROJECT_DELTA:
         channel_log = get_log_channel(channel.guild, "channels")
@@ -950,62 +680,6 @@ async def on_webhooks_update(guild, channel):
 @bot.event
 async def on_member_ban(guild, user):
     guild_id = str(guild.id)
-    data = await get_protection_data(guild_id)
-
-    # Récupérer les utilisateurs whitelistés
-    whitelist_data = await collection19.find_one({"guild_id": guild_id})  # Utilisation de la collection19 pour la whitelist
-    if whitelist_data and str(user.id) in whitelist_data.get("users", []):
-        print(f"{user.name} est dans la whitelist, action ignorée.")
-        return  # Si l'utilisateur est dans la whitelist, on ignore la protection
-
-    if data.get("anti_massban") == "activer":  # Vérifie si la protection anti-massban est activée
-        if guild.id not in ban_times:
-            ban_times[guild.id] = []
-        if guild.id not in banned_by_user:
-            banned_by_user[guild.id] = {}
-
-        current_time = time.time()
-        ban_times[guild.id].append(current_time)
-
-        # Ne garder que les bans des 10 dernières secondes
-        ban_times[guild.id] = [t for t in ban_times[guild.id] if current_time - t < 10]
-
-        # Si plus de 2 bans ont été effectués en moins de 10 secondes
-        if len(ban_times[guild.id]) > 2:
-            # Enregistrement des bans effectués par l'utilisateur
-            if user.id not in banned_by_user[guild.id]:
-                banned_by_user[guild.id][user.id] = []
-
-            banned_by_user[guild.id][user.id].append(current_time)
-
-            # Ne garder que les bans des 10 dernières secondes
-            banned_by_user[guild.id][user.id] = [t for t in banned_by_user[guild.id][user.id] if current_time - t < 10]
-
-            # Révoquer les bans
-            for ban_time in banned_by_user[guild.id][user.id]:
-                try:
-                    await guild.unban(user)
-                    log_channel = guild.system_channel or next((c for c in guild.text_channels if c.permissions_for(guild.me).send_messages), None)
-                    if log_channel:
-                        await log_channel.send(f"🚨 Massban détecté ! Tous les bans effectués par **{user.name}** ont été annulés.")
-                    print(f"Massban détecté pour {user.name}, bans annulés.")
-                except discord.Forbidden:
-                    print(f"Erreur : Le bot n'a pas la permission d'annuler les bans de {user.name}.")
-                except Exception as e:
-                    print(f"Erreur lors de l’annulation du massban : {e}")
-
-            # Kick de la personne qui a effectué le massban
-            try:
-                await user.kick(reason="Massban détecté et sanctionné")
-                log_channel = guild.system_channel or next((c for c in guild.text_channels if c.permissions_for(guild.me).send_messages), None)
-                if log_channel:
-                    await log_channel.send(f"🚨 **{user.name}** a été kické pour avoir effectué un massban.")
-                print(f"{user.name} a été kické pour massban.")
-            except discord.Forbidden:
-                print(f"Erreur : Le bot n'a pas la permission de kicker {user.name}.")
-            except Exception as e:
-                print(f"Erreur lors du kick de {user.name} : {e}")
-
     # --- Logs de ban pour PROJECT_DELTA ---
     if guild.id == PROJECT_DELTA:
         channel = get_log_channel(guild, "sanctions")
