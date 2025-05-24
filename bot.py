@@ -1221,12 +1221,13 @@ async def invite(interaction: discord.Interaction, user: discord.User = None):
     data = collection29.find_one({
         "guild_id": interaction.guild.id,
         "user_id": member.id
-    })
+    }) or {"total": 0, "left": 0, "fake": 0}  # <- évite le crash si pas de données
 
     total = data.get("total", 0)
     left = data.get("left", 0)
     fake = data.get("fake", 0)
     valid = total - left - fake
+
 
     end = time.time()
     ms = round((end - start) * 1000)
