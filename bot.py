@@ -323,60 +323,65 @@ async def on_message_edit(before, after):
 
 @bot.event
 async def on_member_join(member):
-    guild_id = str(member.guild.id)
-
-    # Vérifie si le membre a rejoint le serveur Project : Delta
     PROJECT_DELTA = 1359963854200639498
+
     if member.guild.id == PROJECT_DELTA:
-        # Salon de bienvenue avec mention
-        welcome_channel_id = 1359963854892957893  # Salon spécifique de bienvenue
+        guild = member.guild
+
+        # ───── Salon de bienvenue
+        welcome_channel_id = 1359963854892957893
         welcome_channel = bot.get_channel(welcome_channel_id)
+        if welcome_channel:
+            await welcome_channel.send(f"Bienvenue {member.mention} ! 🎉")
 
-        # Premier message de bienvenue (mention de la personne qui a rejoint)
-        await welcome_channel.send(f"Bienvenue {member.mention} ! 🎉")
+            embed = discord.Embed(
+                title="<a:fete:1172810362261880873> **Bienvenue sur Project : Delta !** <a:fete:1172810362261880873>",
+                description=(
+                    "<a:pin:1172810912386777119> Ce serveur est dédié au **support du bot Project : Delta** ainsi qu’à tout ce qui touche à la **création de bots Discord**, **serveurs sur-mesure**, **sites web**, et **services de graphisme**. **Tout est là pour t’accompagner dans tes projets !**\n\n"
+                    "<a:Anouncements_Animated:1355647614133207330> **Avant de démarrer, voici quelques infos essentielles :**\n\n"
+                    "<a:fleche2:1290296814397816927> ⁠︱** <#1359963854892957892> ** pour éviter les mauvaises surprises.\n"
+                    "<a:fleche2:1290296814397816927> ⁠︱** <#1360365346275459274> ** pour bien comprendre comment utiliser le bot Project : Delta.\n"
+                    "<a:fleche2:1290296814397816927> ⁠︱** <#1361710727986937877> ** pour découvrir nos services et produits.\n\n"
+                    "<a:emojigg_1:1355608239835844850> **Tu rencontres un problème ou tu as une question ?** Ouvre un ticket, notre équipe de support est là pour t’aider !\n\n"
+                    "Prêt à faire évoluer tes projets avec **Project : Delta** ? <a:fete:1172810362261880873>"
+                ),
+                color=discord.Color.blue()
+            )
+            embed.set_image(url="https://github.com/Iseyg91/KNSKS-ET/blob/3702f708294b49536cb70ffdcfc711c101eb0598/IMAGES%20Delta/uri_ifs___M_ff5898f7-21fa-42c9-ad22-6ea18af53e80.jpg?raw=true")
 
-        # Création de l'embed pour Project : Delta
-        embed = discord.Embed(
-            title="<a:fete:1172810362261880873> **Bienvenue sur Project : Delta !** <a:fete:1172810362261880873>",
-            description=(
-                "<a:pin:1172810912386777119> Ce serveur est dédié au **support du bot Project : Delta** ainsi qu’à tout ce qui touche à la **création de bots Discord**, **serveurs sur-mesure**, **sites web**, et **services de graphisme**. **Tout est là pour t’accompagner dans tes projets !**\n\n"
-                "<a:Anouncements_Animated:1355647614133207330> **Avant de démarrer, voici quelques infos essentielles :**\n\n"
-                "<a:fleche2:1290296814397816927> ⁠︱** <#1359963854892957892> ** pour éviter les mauvaises surprises.\n"
-                "<a:fleche2:1290296814397816927> ⁠︱** <#1360365346275459274> ** pour bien comprendre comment utiliser le bot Project : Delta.\n"
-                "<a:fleche2:1290296814397816927> ⁠︱** <#1361710727986937877> ** pour découvrir nos services et produits.\n\n"
-                "<a:emojigg_1:1355608239835844850> **Tu rencontres un problème ou tu as une question ?** Ouvre un ticket, notre équipe de support est là pour t’aider !\n\n"
-                "Prêt à faire évoluer tes projets avec **Project : Delta** ? <a:fete:1172810362261880873>"
-            ),
-            color=discord.Color.blue()
-        )
-        embed.set_image(url="https://github.com/Iseyg91/KNSKS-ET/blob/3702f708294b49536cb70ffdcfc711c101eb0598/IMAGES%20Delta/uri_ifs___M_ff5898f7-21fa-42c9-ad22-6ea18af53e80.jpg?raw=true")
+            await welcome_channel.send(embed=embed)
 
-        # Envoi de l'embed pour Project : Delta
-        await welcome_channel.send(embed=embed)
-
-        # Salon du comptage des membres
-        member_count_channel_id = 1360904472456593489  # Salon pour le comptage des membres
+        # ───── Salon de comptage des membres
+        member_count_channel_id = 1360904472456593489
         member_count_channel = bot.get_channel(member_count_channel_id)
+        if member_count_channel:
+            member_count = len([m for m in guild.members if not m.bot])
+            await member_count_channel.send(
+                f"Bienvenue {member.mention}, nous sommes maintenant {member_count} <a:WelcomePengu:1361709263839428608>"
+            )
 
-        # Message de comptage des membres
-        member_count = len(member.guild.members)
-        message = f"Bienvenue {member.mention}, nous sommes maintenant {member_count} <a:WelcomePengu:1361709263839428608>"
-        await member_count_channel.send(message)
+        # ───── Attribution automatique de rôles
+        try:
+            role_ids = [1359963854376931489]  # Remplace par les ID réels des rôles à attribuer
+            roles = [guild.get_role(role_id) for role_id in role_ids if guild.get_role(role_id)]
 
-        # Envoi d'une notification de log dans le salon spécifique du serveur
-        if member.guild.id == PROJECT_DELTA:
-            channel = get_log_channel(member.guild, "utilisateurs")
-            if channel:
-                embed = discord.Embed(
-                    title="✅ Nouveau Membre",
-                    description=f"{member.mention} a rejoint le serveur.",
-                    color=discord.Color.green()
-                )
-                embed.set_thumbnail(url=member.display_avatar.url)
-                embed.set_footer(text=f"ID de l'utilisateur : {member.id}")
-                embed.timestamp = member.joined_at or discord.utils.utcnow()
+            if roles:
+                await member.add_roles(*roles, reason="Rôle(s) automatique(s) à l'arrivée du membre.")
+        except Exception as e:
+            print(f"Erreur lors de l'ajout des rôles à {member.name}: {e}")
 
-                await channel.send(embed=embed)
+        # ───── Log de l'événement
+        channel = get_log_channel(guild, "utilisateurs")
+        if channel:
+            embed_log = discord.Embed(
+                title="✅ Nouveau Membre",
+                description=f"{member.mention} a rejoint le serveur.",
+                color=discord.Color.green()
+            )
+            embed_log.set_thumbnail(url=member.display_avatar.url)
+            embed_log.set_footer(text=f"ID de l'utilisateur : {member.id}")
+            embed_log.timestamp = member.joined_at or discord.utils.utcnow()
+            await channel.send(embed=embed_log)
 
 @bot.event
 async def on_member_remove(member: discord.Member):
