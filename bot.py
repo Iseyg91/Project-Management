@@ -40,7 +40,6 @@ bot = commands.Bot(command_prefix="-", intents=intents, help_command=None)
 #Configuration du Bot:
 # --- ID Owner Bot ---
 ISEY_ID = 792755123587645461
-VERIFICATION_CODE = "IS-2291-DL" 
 
 # --- ID PROJECT : DELTA SERVER ---
 GUILD_ID = 1359963854200639498
@@ -286,27 +285,7 @@ async def on_error(event, *args, **kwargs):
 async def on_message_delete(message):
     if message.author.bot:
         return  # Ignore les messages de bots
-
-    # Fonctionnalité de snipe
-    channel_id = message.channel.id
-    timestamp = time.time()
-
-    if channel_id not in sniped_messages:
-        sniped_messages[channel_id] = deque(maxlen=10)  # Jusqu'à 10 messages par salon
-
-    sniped_messages[channel_id].append((timestamp, message.author, message.content))
-
-    # Nettoyage après 5 minutes
-    async def cleanup():
-        await asyncio.sleep(300)
-        now = time.time()
-        sniped_messages[channel_id] = deque([
-            (t, a, c) for t, a, c in sniped_messages[channel_id] if now - t < 300
-        ])
-
-    bot.loop.create_task(cleanup())
-
-    # Log du message supprimé (si sur le serveur PROJECT_DELTA)
+    # Log du message supprimé (si sur le serveur ETHERYA)
     if message.guild and message.guild.id == PROJECT_DELTA:
         log_channel = get_log_channel(message.guild, "messages")
         if log_channel:
