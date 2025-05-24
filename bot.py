@@ -1208,7 +1208,27 @@ async def list_clients(interaction: discord.Interaction):
         traceback.print_exc()
         await interaction.followup.send("⚠️ Une erreur est survenue pendant l'affichage.")
 
+@bot.tree.command(name="invite", description="Affiche le nombre d'invitations d'un membre")
+@app_commands.describe(user="Le membre dont tu veux voir les invitations")
+async def invite(interaction: discord.Interaction, user: discord.User = None):
+    member = user or interaction.user
 
+    # Récupérer toutes les invitations du serveur
+    invites = await interaction.guild.invites()
+    user_invites = [invite for invite in invites if invite.inviter == member]
+
+    total_uses = sum(invite.uses for invite in user_invites)
+
+    # Embed propre
+    embed = discord.Embed(
+        title=f"📨 Invitations de {member.display_name}",
+        description=f"{member.mention} a **{total_uses}** invitation(s) sur ce serveur.",
+        color=discord.Color.purple()
+    )
+    embed.set_thumbnail(url=member.display_avatar.url)
+    embed.set_footer(text=f"Demandé par {interaction.user.display_name}", icon_url=interaction.user.display_avatar.url)
+
+    await interaction.response.send_message(embed=embed)
 # Token pour démarrer le bot (à partir des secrets)
 # Lancer le bot avec ton token depuis l'environnement  
 keep_alive()
