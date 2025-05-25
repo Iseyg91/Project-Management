@@ -829,10 +829,6 @@ class TicketView(ui.View):
             emoji=self.emoji
         ))
 
-    @discord.ui.button(label="placeholder", style=ButtonStyle.secondary, disabled=True)  # ne sera pas utilisé
-    async def fake_button(self, *_):  # nécessaire pour éviter les erreurs avec @ui.button
-        pass
-
 # --- ÉCOUTEUR POUR BOUTON CUSTOM ---
 @bot.event
 async def on_interaction(interaction: discord.Interaction):
