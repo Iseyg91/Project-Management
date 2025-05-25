@@ -829,13 +829,19 @@ class TicketView(ui.View):
             emoji=self.emoji
         ))
 
-# --- ÉCOUTEUR POUR BOUTON CUSTOM ---
 @bot.event
 async def on_interaction(interaction: discord.Interaction):
     if interaction.type == discord.InteractionType.component and interaction.data["custom_id"] == "open_ticket":
         guild = interaction.guild
         category = guild.get_channel(1362015652700754052)
-        emoji = interaction.message.components[0].children[0].emoji or "📩"
+
+        # Récupérer l'emoji du bouton cliqué
+        emoji = None
+        for row in interaction.message.components:
+            for component in row.children:
+                if component.custom_id == "open_ticket":
+                    emoji = component.emoji
+        emoji_str = str(emoji) if emoji else "📩"
 
         overwrites = {
             guild.default_role: discord.PermissionOverwrite(view_channel=False),
@@ -843,7 +849,8 @@ async def on_interaction(interaction: discord.Interaction):
             guild.me: discord.PermissionOverwrite(view_channel=True, send_messages=True),
         }
 
-        channel_name = f"︱{emoji}・{interaction.user.name}"
+        # Créer le salon avec l'emoji dans le nom
+        channel_name = f"{emoji_str}・{interaction.user.name}"
         ticket_channel = await guild.create_text_channel(
             name=channel_name,
             overwrites=overwrites,
