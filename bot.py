@@ -882,7 +882,7 @@ async def on_interaction(interaction: discord.Interaction):
 async def panel(ctx):
     if ctx.author.id != ISEY_ID:
         return await ctx.send("❌ Tu n'es pas autorisé à utiliser cette commande.")
-    await ctx.send(embed=panel_embed(), view=TicketView(ctx.author.id, emoji="📩"))
+    await ctx.send(embed=panel_embed(), view=TicketView(ctx.author.id, emoji="🤖"))
 
 @bot.command(name="panel2")
 async def panel2(ctx):
@@ -894,13 +894,13 @@ async def panel2(ctx):
 async def panel3(ctx):
     if ctx.author.id != ISEY_ID:
         return await ctx.send("❌ Tu n'es pas autorisé à utiliser cette commande.")
-    await ctx.send(embed=panel_embed(), view=TicketView(ctx.author.id, emoji="🖇️"))
+    await ctx.send(embed=panel_embed(), view=TicketView(ctx.author.id, emoji="🌐"))
 
 @bot.command(name="panel4")
 async def panel4(ctx):
     if ctx.author.id != ISEY_ID:
         return await ctx.send("❌ Tu n'es pas autorisé à utiliser cette commande.")
-    await ctx.send(embed=panel_embed(), view=TicketView(ctx.author.id, emoji="🎓"))
+    await ctx.send(embed=panel_embed(), view=TicketView(ctx.author.id, emoji="🖥️"))
 
 # --- EMBED COMMUN ---
 def panel_embed():
