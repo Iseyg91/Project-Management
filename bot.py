@@ -1211,44 +1211,28 @@ async def list_clients(interaction: discord.Interaction):
         traceback.print_exc()
         await interaction.followup.send("⚠️ Une erreur est survenue pendant l'affichage.")
 
-
-@bot.tree.command(name="invite", description="Affiche les stats d'invitations d'un membre")
+@bot.tree.command(name="invite", description="Affiche le nombre d'invitations d'un membre")
 @app_commands.describe(user="Le membre dont tu veux voir les invitations")
 async def invite(interaction: discord.Interaction, user: discord.User = None):
-    start = time.time()
     member = user or interaction.user
 
-    data = collection29.find_one({
-        "guild_id": interaction.guild.id,
-        "user_id": member.id
-    }) or {"total": 0, "left": 0, "fake": 0}  # <- évite le crash si pas de données
+    # Récupérer toutes les invitations du serveur
+    invites = await interaction.guild.invites()
+    user_invites = [invite for invite in invites if invite.inviter == member]
 
-    total = data.get("total", 0)
-    left = data.get("left", 0)
-    fake = data.get("fake", 0)
-    valid = total - left - fake
-    end = time.time()
-    ms = round((end - start) * 1000)
+    total_uses = sum(invite.uses for invite in user_invites)
 
-    now = datetime.now().strftime("%d/%m/%Y à %Hh%M")
-
+    # Embed propre
     embed = discord.Embed(
-        title=f"📊 Statistiques d'invites de {member.display_name}",
-        description=f"Votre compteur d'invitations a été généré en **{ms}ms**\n\n"
-                    f":white_check_mark: **{valid}** invités\n"
-                    f":x: **{left}** partis\n"
-                    f":poop: **{fake}** invalidées\n\n"
-                    f"Vous avez actuellement **{total} invitations** ! :clap:",
+        title=f"📨 Invitations de {member.display_name}",
+        description=f"{member.mention} a **{total_uses}** invitation(s) sur ce serveur.",
         color=discord.Color.purple()
     )
-
     embed.set_thumbnail(url=member.display_avatar.url)
-    embed.set_footer(
-        text=f"{bot.user.name} • Demandé par {interaction.user.display_name} • {now}",
-        icon_url=bot.user.display_avatar.url
-    )
+    embed.set_footer(text=f"Demandé par {interaction.user.display_name}", icon_url=interaction.user.display_avatar.url)
 
     await interaction.response.send_message(embed=embed)
+
 # Token pour démarrer le bot (à partir des secrets)
 # Lancer le bot avec ton token depuis l'environnement  
 keep_alive()
