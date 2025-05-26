@@ -230,6 +230,9 @@ GUILD_SETTINGS = {}
 # Événement quand le bot est prêt
 @bot.event
 async def on_ready():
+    bot.add_view(TicketView(author_id=ISEY_ID))  # pour bouton "Passé Commande"
+    bot.add_view(ClaimCloseView())               # pour "Claim" et "Fermer"
+    bot.add_view(GlobalSupportView())  # Nécessaire pour les boutons persistants
     print(f"✅ Le bot {bot.user} est maintenant connecté ! (ID: {bot.user.id})")
 
     bot.uptime = time.time()
@@ -929,10 +932,11 @@ def panel_embed():
 
 #-------------------------------------------------------------------------- Support:
 
+# ========== MODAL ==========
+
 class GlobalSupportModal(ui.Modal):
     def __init__(self):
-        super().__init__(title="Fermer le ticket support")  # titre ici
-
+        super().__init__(title="Fermer le ticket support")
         self.reason = ui.TextInput(
             label="Raison de fermeture",
             style=discord.TextStyle.paragraph,
@@ -941,54 +945,61 @@ class GlobalSupportModal(ui.Modal):
         self.add_item(self.reason)
 
     async def on_submit(self, interaction: discord.Interaction):
-        channel = interaction.channel
-        guild = interaction.guild
-        reason = self.reason.value
+        try:
+            channel = interaction.channel
+            guild = interaction.guild
+            reason = self.reason.value
 
-        transcript_channel = guild.get_channel(TRANSCRIPT_CHANNEL_ID)
-        if not transcript_channel:
-            return await interaction.response.send_message("❌ Salon de transcript introuvable.", ephemeral=True)
+            transcript_channel = guild.get_channel(TRANSCRIPT_CHANNEL_ID)
+            if not transcript_channel:
+                return await interaction.response.send_message("❌ Salon de transcript introuvable.", ephemeral=True)
 
-        messages = [msg async for msg in channel.history(limit=None)]
-        transcript_text = "\n".join([
-            f"{msg.created_at.strftime('%Y-%m-%d %H:%M')} - {msg.author}: {msg.content}"
-            for msg in messages if msg.content
-        ])
-        file = discord.File(fp=io.StringIO(transcript_text), filename="transcript.txt")
+            messages = [msg async for msg in channel.history(limit=None)]
+            transcript_text = "\n".join([
+                f"{msg.created_at.strftime('%Y-%m-%d %H:%M')} - {msg.author}: {msg.content}"
+                for msg in messages if msg.content
+            ])
+            file = discord.File(fp=io.StringIO(transcript_text), filename="transcript.txt")
 
-        ticket_data = collection16.find_one({"channel_id": str(channel.id)})
-        opened_by = guild.get_member(int(ticket_data["user_id"])) if ticket_data else None
-        claimed_by = None
+            ticket_data = collection16.find_one({"channel_id": str(channel.id)})
+            opened_by = guild.get_member(int(ticket_data["user_id"])) if ticket_data else None
+            claimed_by = None
 
-        async for msg in channel.history(limit=50):
-            if msg.embeds:
-                embed = msg.embeds[0]
-                if embed.footer and "Claimé par" in embed.footer.text:
-                    try:
-                        user_id = int(embed.footer.text.split("Claimé par ")[-1].replace(">", "").replace("<@", ""))
-                        claimed_by = guild.get_member(user_id)
-                    except:
-                        pass
-                    break
+            async for msg in channel.history(limit=50):
+                if msg.embeds:
+                    embed = msg.embeds[0]
+                    if embed.footer and "Claimé par" in embed.footer.text:
+                        try:
+                            user_id = int(embed.footer.text.split("Claimé par ")[-1].replace(">", "").replace("<@", ""))
+                            claimed_by = guild.get_member(user_id)
+                        except:
+                            pass
+                        break
 
-        embed_log = discord.Embed(title="🎫 Ticket Support Fermé", color=discord.Color.red())
-        embed_log.add_field(name="Ouvert par", value=opened_by.mention if opened_by else "Inconnu", inline=True)
-        embed_log.add_field(name="Claimé par", value=claimed_by.mention if claimed_by else "Non claim", inline=True)
-        embed_log.add_field(name="Fermé par", value=interaction.user.mention, inline=True)
-        embed_log.add_field(name="Raison", value=reason, inline=False)
-        embed_log.set_footer(text=f"Ticket: {channel.name} | ID: {channel.id}")
-        embed_log.timestamp = discord.utils.utcnow()
+            embed_log = discord.Embed(title="🎫 Ticket Support Fermé", color=discord.Color.red())
+            embed_log.add_field(name="Ouvert par", value=opened_by.mention if opened_by else "Inconnu", inline=True)
+            embed_log.add_field(name="Claimé par", value=claimed_by.mention if claimed_by else "Non claim", inline=True)
+            embed_log.add_field(name="Fermé par", value=interaction.user.mention, inline=True)
+            embed_log.add_field(name="Raison", value=reason, inline=False)
+            embed_log.set_footer(text=f"Ticket: {channel.name} | ID: {channel.id}")
+            embed_log.timestamp = discord.utils.utcnow()
 
-        await transcript_channel.send(embed=embed_log, file=file)
-        await interaction.response.send_message("✅ Ticket support fermé.", ephemeral=True)
-        await channel.delete()
+            await transcript_channel.send(embed=embed_log, file=file)
+            await interaction.response.send_message("✅ Ticket support fermé.", ephemeral=True)
+            await channel.delete()
 
-        
+        except Exception as e:
+            print(f"Erreur dans la modal : {e}")
+            await interaction.response.send_message("❌ Une erreur est survenue.", ephemeral=True)
+
+
+# ========== VUE SUPPORT ==========
+
 class GlobalSupportView(ui.View):
     def __init__(self):
         super().__init__(timeout=None)
 
-    @ui.button(label="Claim (Support)", style=ButtonStyle.blurple, custom_id="claim_support")
+    @ui.button(label="Claim (Support)", style=discord.ButtonStyle.primary, custom_id="claim_support")
     async def claim_ticket(self, interaction: discord.Interaction, button: discord.ui.Button):
         if SUPPORT_ROLE_ID not in [role.id for role in interaction.user.roles]:
             return await interaction.response.send_message("❌ Tu n'as pas la permission de claim.", ephemeral=True)
@@ -1002,9 +1013,12 @@ class GlobalSupportView(ui.View):
 
         await interaction.response.send_message(f"📌 Ticket support claim par {interaction.user.mention}.")
 
-    @ui.button(label="Fermer (Support)", style=ButtonStyle.red, custom_id="close_support")
+    @ui.button(label="Fermer (Support)", style=discord.ButtonStyle.red, custom_id="close_support")
     async def close_ticket(self, interaction: discord.Interaction, button: discord.ui.Button):
         await interaction.response.send_modal(GlobalSupportModal())
+
+
+# ========== BOUTON POUR OUVRIR UN TICKET ==========
 
 class GlobalSupportTicketView(ui.View):
     def __init__(self, author_id, emoji="🎟️"):
@@ -1014,10 +1028,13 @@ class GlobalSupportTicketView(ui.View):
 
         self.add_item(ui.Button(
             label="Support Global",
-            style=ButtonStyle.primary,
+            style=discord.ButtonStyle.primary,
             custom_id="open_global_support"
         ))
-        
+
+
+# ========== COMMANDE PANEL ==========
+
 @bot.command(name="panel-support")
 async def panel_support(ctx):
     if ctx.author.id != ISEY_ID:
@@ -1026,7 +1043,8 @@ async def panel_support(ctx):
         title="🎟️ Panel Support Global",
         description="Cliquez sur le bouton ci-dessous pour ouvrir un ticket support.",
         color=discord.Color.blue()
-    ), view=GlobalSupportTicketView(ctx.author.id, emoji="🎟️"))
+    ), view=GlobalSupportTicketView(ctx.author.id))
+
 
 #--------------------------------------------------------------------------- Gestion Clients
 
