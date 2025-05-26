@@ -942,12 +942,14 @@ class GlobalSupportModal(ui.Modal):
         )
         self.add_item(self.reason)
 
-    async def on_submit(self, interaction: discord.Interaction):
-        try:
-            channel = interaction.channel
-            guild = interaction.guild
-            reason = self.reason.value
+async def on_submit(self, interaction: discord.Interaction):
+    try:
+        if SUPPORT_ROLE_ID not in [role.id for role in interaction.user.roles]:
+            return await interaction.response.send_message("❌ Tu n'as pas la permission de fermer ce ticket.", ephemeral=True)
 
+        channel = interaction.channel
+        guild = interaction.guild
+        reason = self.reason.value
             transcript_channel = guild.get_channel(TRANSCRIPT_CHANNEL_ID)
             if not transcript_channel:
                 return await interaction.response.send_message("❌ Salon de transcript introuvable.", ephemeral=True)
@@ -1022,8 +1024,10 @@ class GlobalSupportView(ui.View):
 
     @ui.button(label="Fermer", style=discord.ButtonStyle.red, custom_id="close_support")
     async def close_ticket(self, interaction: discord.Interaction, button: discord.ui.Button):
+        if SUPPORT_ROLE_ID not in [role.id for role in interaction.user.roles]:
+            return await interaction.response.send_message("❌ Tu n'as pas la permission de fermer ce ticket.", ephemeral=True)
+    
         await interaction.response.send_modal(GlobalSupportModal())
-
 
 # ========== VUE POUR OUVERTURE DE TICKET ==========
 class GlobalSupportTicketView(ui.View):
@@ -1045,9 +1049,9 @@ async def panel_support(ctx):
     if ctx.author.id != ISEY_ID:
         return await ctx.send("❌ Tu n'es pas autorisé à utiliser cette commande.")
     await ctx.send(embed=discord.Embed(
-        title="🎟️ Panel Support Global",
+        title="Panel Support Global",
         description="Cliquez sur le bouton ci-dessous pour ouvrir un ticket support.",
-        color=discord.Color.blue()
+        color=discord.Color.red()
     ), view=GlobalSupportTicketView(ctx.author.id))
 
 
@@ -1086,8 +1090,20 @@ async def on_interaction(interaction: discord.Interaction):
         })
 
         embed = discord.Embed(
-            title="📩 Ticket Ouvert",
-            description="Un membre du support va bientôt te répondre.\nUtilise les boutons ci-dessous pour claim ou fermer.",
+            title="📩 Ticket ouvert",
+            description=(
+                "Merci d’avoir ouvert un ticket sur notre système de support.\n\n"
+                "Notre équipe a bien reçu ta demande et un membre du staff viendra te répondre dès que possible. "
+                "Nous faisons notre maximum pour traiter chaque requête rapidement et efficacement, alors merci de faire preuve d’un peu de patience.\n\n"
+                "Pendant ce temps, pense à détailler au maximum ton problème ou ta question dans ce ticket. Plus tu es précis, plus nous pourrons t’aider rapidement et efficacement. "
+                "Voici quelques conseils :\n"
+                "- Explique clairement ce que tu veux signaler ou demander\n"
+                "- Si possible, joins des captures d’écran ou des liens utiles\n"
+                "- Évite de mentionner plusieurs fois le staff, cela ne fera pas accélérer le processus\n\n"
+                "🔒 Ce ticket est privé : seuls toi et les membres du staff peuvent le voir.\n"
+                "📌 Une fois ta demande résolue, un membre du staff ou toi-même pourrez fermer le ticket en utilisant le bouton prévu à cet effet.\n\n"
+                "Merci de ta confiance et de faire partie de notre communauté ❤️"
+            ),
             color=discord.Color.green()
         )
         await ticket_channel.send(content=user.mention, embed=embed, view=GlobalSupportView())
