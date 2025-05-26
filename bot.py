@@ -1193,20 +1193,30 @@ async def list_clients(interaction: discord.Interaction):
 async def points(ctx, member: discord.Member = None):
     member = member or ctx.author
 
-    # Récupérer les données de la base
+    # Récupération des données depuis MongoDB
     user_data = collection30.find_one({"user_id": member.id, "guild_id": ctx.guild.id})
     points = user_data.get("points", 0) if user_data else 0
 
-    # Créer l'embed avec la pp à gauche (via set_author)
+    # Création de l'embed
     embed = discord.Embed(
-        description=f"**Points :** {points}",
-        color=discord.Color.blurple()
+        title="<a:fete:1375944789035319470> Événement de Lancement - Points Collectés !",
+        description=(
+            f"<a:blblbl:1376554956550705182> **{member.mention}**, voici tes points actuel :\n\n"
+            f"> <a:fleche3:1290077283100397672> **{points}** points\n\n"
+            f"Continue à participer pour en gagner encore plus ! "
+        ),
+        color=discord.Color.gold()
     )
-    embed.set_author(name=member.name, icon_url=member.avatar.url)  # Nom d'utilisateur + pp à gauche
-    embed.set_footer(text="Système de points développé par Delta ⚙️")
+    embed.set_thumbnail(url=member.display_avatar.url)
+    embed.set_author(name=member.name, icon_url=member.display_avatar.url)
+    embed.set_footer(
+        text="Delta • Système de points événementiel <a:trophee:1289678773700268183>",
+        icon_url=ctx.guild.icon.url if ctx.guild.icon else None
+    )
+    embed.timestamp = ctx.message.created_at
 
     await ctx.send(embed=embed)
-
+    
 # Token pour démarrer le bot (à partir des secrets)
 # Lancer le bot avec ton token depuis l'environnement  
 keep_alive()
