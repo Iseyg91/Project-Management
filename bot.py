@@ -228,6 +228,20 @@ def load_guild_settings(guild_id):
 GUILD_SETTINGS = {}
 
 #------------------------------------------------------------------------- Code Protection:                
+
+@tasks.loop(minutes=1)
+async def add_voice_points():
+    for guild in bot.guilds:
+        for vc in guild.voice_channels:
+            for member in vc.members:
+                if member.bot:
+                    continue
+                collection30.update_one(
+                    {"user_id": member.id, "guild_id": guild.id},
+                    {"$inc": {"points": 1}},
+                    upsert=True
+                )
+
 # Événement quand le bot est prêt
 @bot.event
 async def on_ready():
@@ -237,6 +251,8 @@ async def on_ready():
     print(f"✅ Le bot {bot.user} est maintenant connecté ! (ID: {bot.user.id})")
 
     bot.uptime = time.time()
+    # Démarrer les tâches de fond
+    add_voice_points.start()
 
     guild_count = len(bot.guilds)
     member_count = sum(guild.member_count for guild in bot.guilds)
@@ -298,6 +314,25 @@ async def on_error(event, *args, **kwargs):
                 print("Erreur : Aucun salon textuel trouvé pour envoyer l'embed.")
     else:
         print("Erreur : Le type de l'objet n'est pas pris en charge pour l'envoi du message.")
+
+message_cooldowns = {}  # Pour éviter le spam
+@bot.event
+async def on_message(message):
+    if message.author.bot:
+        return
+
+    key = f"{message.guild.id}-{message.author.id}"
+    if key not in message_cooldowns:
+        collection30.update_one(
+            {"user_id": message.author.id, "guild_id": message.guild.id},
+            {"$inc": {"points": 1}},
+            upsert=True
+        )
+        message_cooldowns[key] = True
+        await asyncio.sleep(60)  # cooldown de 1 minute
+        del message_cooldowns[key]
+
+    await bot.process_commands(message)
 #-------------------------------------------------------------------------- Bot Event:
 @bot.event
 async def on_message_delete(message):
