@@ -1253,6 +1253,36 @@ async def reset_points(interaction: Interaction):
 
     await interaction.response.send_modal(ResetPointsVerificationModal(interaction))
 
+@bot.tree.command(name="give-points", description="Donne des points à un utilisateur.")
+@app_commands.describe(user="L'utilisateur à qui donner des points", amount="Le nombre de points à donner")
+async def give_points(interaction: discord.Interaction, user: discord.Member, amount: int):
+    # Vérification des permissions
+    if not (interaction.user.guild_permissions.administrator or interaction.user.id == ISEY_ID):
+        return await interaction.response.send_message("❌ Tu n'as pas la permission d'utiliser cette commande.", ephemeral=True)
+
+    if amount <= 0:
+        return await interaction.response.send_message("⚠️ Le montant doit être supérieur à 0.", ephemeral=True)
+
+    # Récupération des données depuis MongoDB
+    user_data = collection30.find_one({"user_id": user.id, "guild_id": interaction.guild.id})
+
+    if user_data:
+        new_points = user_data.get("points", 0) + amount
+        collection30.update_one(
+            {"user_id": user.id, "guild_id": interaction.guild.id},
+            {"$set": {"points": new_points}}
+        )
+    else:
+        new_points = amount
+        collection30.insert_one({
+            "user_id": user.id,
+            "guild_id": interaction.guild.id,
+            "points": new_points
+        })
+
+    await interaction.response.send_message(
+        f"✅ {amount} points ont été donnés à {user.mention} ! Il a maintenant **{new_points}** points."
+    )
 # Token pour démarrer le bot (à partir des secrets)
 # Lancer le bot avec ton token depuis l'environnement  
 keep_alive()
