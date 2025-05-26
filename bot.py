@@ -950,7 +950,7 @@ async def on_submit(self, interaction: discord.Interaction):
         channel = interaction.channel
         guild = interaction.guild
         reason = self.reason.value
-            transcript_channel = guild.get_channel(TRANSCRIPT_CHANNEL_ID)
+        transcript_channel = guild.get_channel(TRANSCRIPT_CHANNEL_ID)
             if not transcript_channel:
                 return await interaction.response.send_message("❌ Salon de transcript introuvable.", ephemeral=True)
 
