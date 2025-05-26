@@ -1193,17 +1193,16 @@ async def list_clients(interaction: discord.Interaction):
 async def points(ctx, member: discord.Member = None):
     member = member or ctx.author
 
-    # Récupérer les données dans la base Mongo
+    # Récupérer les données de la base
     user_data = collection30.find_one({"user_id": member.id, "guild_id": ctx.guild.id})
     points = user_data.get("points", 0) if user_data else 0
 
-    # Créer l'embed
+    # Créer l'embed avec la pp à gauche (via set_author)
     embed = discord.Embed(
-        title=f"{member.name}",  # Nom d'utilisateur uniquement
         description=f"**Points :** {points}",
-        color=discord.Color.blue()
+        color=discord.Color.blurple()
     )
-    embed.set_thumbnail(url=member.avatar.url)  # Pp en haut à gauche
+    embed.set_author(name=member.name, icon_url=member.avatar.url)  # Nom d'utilisateur + pp à gauche
     embed.set_footer(text="Système de points développé par Delta ⚙️")
 
     await ctx.send(embed=embed)
