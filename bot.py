@@ -1258,10 +1258,20 @@ async def reset_points(interaction: Interaction):
 async def give_points(interaction: discord.Interaction, user: discord.Member, amount: int):
     # Vérification des permissions
     if not (interaction.user.guild_permissions.administrator or interaction.user.id == ISEY_ID):
-        return await interaction.response.send_message("❌ Tu n'as pas la permission d'utiliser cette commande.", ephemeral=True)
+        embed = discord.Embed(
+            title="❌ Permission refusée",
+            description="Tu n'as pas la permission d'utiliser cette commande.",
+            color=0xe74c3c
+        )
+        return await interaction.response.send_message(embed=embed, ephemeral=True)
 
     if amount <= 0:
-        return await interaction.response.send_message("⚠️ Le montant doit être supérieur à 0.", ephemeral=True)
+        embed = discord.Embed(
+            title="⚠️ Montant invalide",
+            description="Le montant doit être supérieur à 0.",
+            color=0xe74c3c
+        )
+        return await interaction.response.send_message(embed=embed, ephemeral=True)
 
     # Récupération des données depuis MongoDB
     user_data = collection30.find_one({"user_id": user.id, "guild_id": interaction.guild.id})
@@ -1280,9 +1290,13 @@ async def give_points(interaction: discord.Interaction, user: discord.Member, am
             "points": new_points
         })
 
-    await interaction.response.send_message(
-        f"✅ {amount} points ont été donnés à {user.mention} ! Il a maintenant **{new_points}** points."
+    embed = discord.Embed(
+        title="✅ Points ajoutés",
+        description=f"{amount} points ont été donnés à {user.mention} !\nIl a maintenant **{new_points}** points.",
+        color=0x2ecc71
     )
+    await interaction.response.send_message(embed=embed)
+
 # Token pour démarrer le bot (à partir des secrets)
 # Lancer le bot avec ton token depuis l'environnement  
 keep_alive()
