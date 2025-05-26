@@ -929,8 +929,16 @@ def panel_embed():
 
 #-------------------------------------------------------------------------- Support:
 
-class GlobalSupportModal(ui.Modal, title="Fermer le ticket support"):
-    reason = ui.TextInput(label="Raison de fermeture", style=discord.TextStyle.paragraph)
+class GlobalSupportModal(ui.Modal):
+    def __init__(self):
+        super().__init__(title="Fermer le ticket support")  # titre ici
+
+        self.reason = ui.TextInput(
+            label="Raison de fermeture",
+            style=discord.TextStyle.paragraph,
+            required=True
+        )
+        self.add_item(self.reason)
 
     async def on_submit(self, interaction: discord.Interaction):
         channel = interaction.channel
@@ -938,6 +946,8 @@ class GlobalSupportModal(ui.Modal, title="Fermer le ticket support"):
         reason = self.reason.value
 
         transcript_channel = guild.get_channel(TRANSCRIPT_CHANNEL_ID)
+        if not transcript_channel:
+            return await interaction.response.send_message("❌ Salon de transcript introuvable.", ephemeral=True)
 
         messages = [msg async for msg in channel.history(limit=None)]
         transcript_text = "\n".join([
@@ -954,8 +964,11 @@ class GlobalSupportModal(ui.Modal, title="Fermer le ticket support"):
             if msg.embeds:
                 embed = msg.embeds[0]
                 if embed.footer and "Claimé par" in embed.footer.text:
-                    user_id = int(embed.footer.text.split("Claimé par ")[-1].replace(">", "").replace("<@", ""))
-                    claimed_by = guild.get_member(user_id)
+                    try:
+                        user_id = int(embed.footer.text.split("Claimé par ")[-1].replace(">", "").replace("<@", ""))
+                        claimed_by = guild.get_member(user_id)
+                    except:
+                        pass
                     break
 
         embed_log = discord.Embed(title="🎫 Ticket Support Fermé", color=discord.Color.red())
@@ -967,9 +980,9 @@ class GlobalSupportModal(ui.Modal, title="Fermer le ticket support"):
         embed_log.timestamp = discord.utils.utcnow()
 
         await transcript_channel.send(embed=embed_log, file=file)
-
         await interaction.response.send_message("✅ Ticket support fermé.", ephemeral=True)
         await channel.delete()
+
         
 class GlobalSupportView(ui.View):
     def __init__(self):
