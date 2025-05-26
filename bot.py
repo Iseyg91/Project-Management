@@ -137,6 +137,7 @@ collection26 = db['alerte'] #Stock les Salons Alerte
 collection27 = db['guild_troll'] #Stock les serveur ou les commandes troll sont actif ou inactif
 collection28 = db['sensible'] #Stock les mots sensibles actif des serveurs
 collection29 = db['delta_invite'] #Stock les invitation des utilisateurs
+collection30 = db ['delta_points'] #Stock les points des utilisateurs
 
 # --- Charger les paramètres du serveur dynamiquement ---
 def load_guild_settings(guild_id: int) -> dict:
@@ -174,6 +175,7 @@ def load_guild_settings(guild_id):
     guild_troll_data = collection27.find_one({"guild_id": guild_id}) or {}
     sensible_data = collection28.find_one({"guild_id": guild_id}) or {}
     delta_invite_data = collection29.find_one({"guild_id": guild_id}) or {}
+    delta_points_data = collection30.find_one({"guild_id": guild_id}) or {}
 
     # Débogage : Afficher les données de setup
     print(f"Setup data for guild {guild_id}: {setup_data}")
@@ -207,7 +209,8 @@ def load_guild_settings(guild_id):
         "alerte": alerte_data,
         "guild_troll": guild_troll_data,
         "sensible": sensible_data,
-        "delta_invite": delta_invite_data
+        "delta_invite": delta_invite_data,
+        "delta_points": delta_points_data
     }
 
     return combined_data
@@ -1185,6 +1188,25 @@ async def list_clients(interaction: discord.Interaction):
         print("❌ Erreur lors de la récupération des clients :", e)
         traceback.print_exc()
         await interaction.followup.send("⚠️ Une erreur est survenue pendant l'affichage.")
+
+@bot.command(name="points")
+async def points(ctx, member: discord.Member = None):
+    member = member or ctx.author
+
+    # Récupérer les données dans la base Mongo
+    user_data = collection30.find_one({"user_id": member.id, "guild_id": ctx.guild.id})
+    points = user_data.get("points", 0) if user_data else 0
+
+    # Créer l'embed
+    embed = discord.Embed(
+        title=f"{member.name}",  # Nom d'utilisateur uniquement
+        description=f"**Points :** {points}",
+        color=discord.Color.blue()
+    )
+    embed.set_thumbnail(url=member.avatar.url)  # Pp en haut à gauche
+    embed.set_footer(text="Système de points développé par Delta ⚙️")
+
+    await ctx.send(embed=embed)
 
 # Token pour démarrer le bot (à partir des secrets)
 # Lancer le bot avec ton token depuis l'environnement  
