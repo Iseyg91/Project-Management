@@ -31,6 +31,8 @@ from typing import Optional
 from discord import app_commands, Interaction, Embed, SelectOption
 from discord.ui import View, Select
 import uuid
+rom discord import app_commands, Interaction, Embed, Member, ui
+from datetime import datetime
 
 token = os.environ['ETHERYA']
 intents = discord.Intents.all()
@@ -137,8 +139,10 @@ collection26 = db['alerte'] #Stock les Salons Alerte
 collection27 = db['guild_troll'] #Stock les serveur ou les commandes troll sont actif ou inactif
 collection28 = db['sensible'] #Stock les mots sensibles actif des serveurs
 collection29 = db['delta_invite'] #Stock les invitation des utilisateurs
-collection30 = db ['delta_points'] #Stock les points des utilisateurs
-collection31 = db ['delta_event']
+collection30 = db['delta_points'] #Stock les points des utilisateurs
+collection31 = db['delta_event']
+collection32 = db['history_points'] 
+
 # --- Charger les paramètres du serveur dynamiquement ---
 def load_guild_settings(guild_id: int) -> dict:
     # Récupère la configuration spécifique au serveur à partir de la base MongoDB
@@ -177,6 +181,7 @@ def load_guild_settings(guild_id):
     delta_invite_data = collection29.find_one({"guild_id": guild_id}) or {}
     delta_points_data = collection30.find_one({"guild_id": guild_id}) or {}
     delta_event_data = collection31.find_one({"guild_id": guild_id}) or {}
+    history_points_data = collection32.find_one({"guild_id": guild_id}) or {}
     
     # Débogage : Afficher les données de setup
     print(f"Setup data for guild {guild_id}: {setup_data}")
@@ -212,7 +217,8 @@ def load_guild_settings(guild_id):
         "sensible": sensible_data,
         "delta_invite": delta_invite_data,
         "delta_points": delta_points_data,
-        "delta_event": delta_event_data
+        "delta_event": delta_event_data,
+        "history_points": history_points
     }
 
     return combined_data
@@ -1302,6 +1308,20 @@ async def give_points(interaction: discord.Interaction, user: discord.Member, am
             "points": new_points
         })
 
+    # ⏺️ Enregistrement dans l'historique
+    collection32.insert_one({
+        "guild_id": interaction.guild.id,
+        "user_id": user.id,
+        "amount": amount,
+        "remaining_points": new_points,
+        "reason": reason,
+        "staff_id": interaction.user.id,
+        "staff_name": interaction.user.name,
+        "timestamp": datetime.utcnow(),
+        "action": "add"
+    })
+
+    # ✅ Confirmation
     embed = discord.Embed(
         title="✅ Points ajoutés",
         description=(
@@ -1312,6 +1332,7 @@ async def give_points(interaction: discord.Interaction, user: discord.Member, am
         color=0x2ecc71
     )
     await interaction.response.send_message(embed=embed)
+    
 @bot.tree.command(name="remove-points", description="Retire des points à un utilisateur.")
 @app_commands.describe(
     user="L'utilisateur à qui retirer des points", 
@@ -1350,10 +1371,27 @@ async def remove_points(interaction: discord.Interaction, user: discord.Member, 
     if user_data:
         current_points = user_data.get("points", 0)
         new_points = max(0, current_points - amount)
+        
+        # Mise à jour des points
         collection30.update_one(
             {"user_id": user.id, "guild_id": interaction.guild.id},
             {"$set": {"points": new_points}}
         )
+
+        # Enregistrement dans l'historique
+        collection32.insert_one({
+            "guild_id": interaction.guild.id,
+            "user_id": user.id,
+            "user_name": str(user),
+            "action": "remove",
+            "amount": amount,
+            "remaining_points": new_points,
+            "reason": reason,
+            "staff_id": interaction.user.id,
+            "staff_name": str(interaction.user),
+            "timestamp": datetime.utcnow()
+        })
+
         embed = discord.Embed(
             title="✅ Points retirés",
             description=(
@@ -1369,8 +1407,78 @@ async def remove_points(interaction: discord.Interaction, user: discord.Member, 
             description=f"{user.mention} n’a aucun point enregistré.",
             color=0xe74c3c
         )
-    
+
     await interaction.response.send_message(embed=embed)
+
+
+class HistoryView(ui.View):
+    def __init__(self, pages):
+        super().__init__(timeout=120)
+        self.pages = pages
+        self.current_page = 0
+
+    async def update_message(self, interaction: Interaction):
+        for child in self.children:
+            if isinstance(child, ui.Button):
+                child.disabled = False
+        if self.current_page == 0:
+            self.children[0].disabled = True  # Précédent
+        if self.current_page == len(self.pages) - 1:
+            self.children[1].disabled = True  # Suivant
+        await interaction.response.edit_message(embed=self.pages[self.current_page], view=self)
+
+    @ui.button(label="⬅️ Précédent", style=discord.ButtonStyle.blurple)
+    async def previous_page(self, interaction: Interaction, button: ui.Button):
+        self.current_page -= 1
+        await self.update_message(interaction)
+
+    @ui.button(label="➡️ Suivant", style=discord.ButtonStyle.blurple)
+    async def next_page(self, interaction: Interaction, button: ui.Button):
+        self.current_page += 1
+        await self.update_message(interaction)
+
+@bot.tree.command(name="history", description="Affiche l'historique des points d'un utilisateur.")
+@app_commands.describe(user="L'utilisateur dont tu veux voir l'historique.")
+async def history(interaction: Interaction, user: Member):
+    records = list(collection32.find({"user_id": user.id, "guild_id": interaction.guild.id}).sort("timestamp", -1))
+
+    if not records:
+        embed = Embed(
+            title="📜 Historique vide",
+            description=f"Aucune action trouvée pour {user.mention}.",
+            color=0x95a5a6
+        )
+        return await interaction.response.send_message(embed=embed, ephemeral=True)
+
+    entries_per_page = 5
+    pages = []
+
+    for i in range(0, len(records), entries_per_page):
+        chunk = records[i:i+entries_per_page]
+        description = ""
+
+        for entry in chunk:
+            action = entry.get("action", "add")
+            amount = entry.get("amount", 0)
+            sign = "+" if action == "add" else "-"
+            emoji = "✅" if action == "add" else "❌"
+            reason = entry.get("reason", "Aucune raison")
+            staff_name = entry.get("staff_name", "Inconnu")
+            timestamp = entry.get("timestamp")
+            time_str = timestamp.strftime("%Y-%m-%d %H:%M") if timestamp else "inconnue"
+
+            description += f"{emoji} `{sign}{amount}` | **{reason}**\nPar `{staff_name}` le {time_str} UTC\n\n"
+
+        embed = Embed(
+            title=f"📊 Historique de {user.name}",
+            description=description,
+            color=0x3498db
+        )
+        embed.set_footer(text=f"Page {len(pages)+1} / {((len(records)-1)//entries_per_page)+1}")
+        pages.append(embed)
+
+    view = HistoryView(pages)
+    await interaction.response.send_message(embed=pages[0], view=view, ephemeral=True)
 
 # Token pour démarrer le bot (à partir des secrets)
 # Lancer le bot avec ton token depuis l'environnement  
