@@ -1207,7 +1207,7 @@ async def points(ctx, member: discord.Member = None):
         ),
         color=discord.Color.gold()
     )
-    embed.set_thumbnail(url=member.display_avatar.url)
+    embed.set_author(name=member.name, icon_url=member.display_avatar.url)
     embed.set_footer(
         text="Delta • Système de points événementiel",
         icon_url=ctx.guild.icon.url if ctx.guild.icon else None
