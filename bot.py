@@ -315,12 +315,40 @@ async def on_error(event, *args, **kwargs):
     else:
         print("Erreur : Le type de l'objet n'est pas pris en charge pour l'envoi du message.")
 
-message_cooldowns = {}  # Pour éviter le spam
+# Cooldown pour éviter le spam de points
+message_cooldowns = {}
+
+# Liste des emojis animés à alterner
+reaction_emojis = [
+    "<a:4a_bubbleheart:1376670552676368557>",
+    "<a:white_heart:1376670622071128185>",
+    "<a:Heart:1376670687497818162>",
+    "<a:pink_blue_heart:1376670720301469786>",
+    "<a:heart:1376670580283146371>"
+]
+
+# Index pour alterner les emojis
+current_emoji_index = 0
+
 @bot.event
 async def on_message(message):
+    global current_emoji_index
+
     if message.author.bot:
         return
 
+    # Salon spécifique
+    if str(message.channel.id) == "1360359130161872957":
+        try:
+            # Réaction avec l’emoji actuel
+            await message.add_reaction(reaction_emojis[current_emoji_index])
+
+            # Passer à l’emoji suivant
+            current_emoji_index = (current_emoji_index + 1) % len(reaction_emojis)
+        except Exception as e:
+            print(f"Erreur lors de la réaction : {e}")
+
+    # Système de points avec cooldown
     key = f"{message.guild.id}-{message.author.id}"
     if key not in message_cooldowns:
         collection30.update_one(
@@ -329,7 +357,7 @@ async def on_message(message):
             upsert=True
         )
         message_cooldowns[key] = True
-        await asyncio.sleep(60)  # cooldown de 1 minute
+        await asyncio.sleep(60)
         del message_cooldowns[key]
 
     await bot.process_commands(message)
