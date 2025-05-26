@@ -66,6 +66,7 @@ SUPPORT_ROLE_ID = 1359963854422933876
 SALON_REPORT_ID = 1361362788672344290
 ROLE_REPORT_ID = 1362339195380568085
 TRANSCRIPT_CHANNEL_ID = 1361669998665535499
+TICKET_CATEGORY_ID = 1362015652700754052
 
 # --- ID Gestion Clients Delta ---
 LOG_CHANNEL_RETIRE_ID = 1360864806957092934
@@ -1018,7 +1019,7 @@ class GlobalSupportView(ui.View):
         await interaction.response.send_modal(GlobalSupportModal())
 
 
-# ========== BOUTON POUR OUVRIR UN TICKET ==========
+# ========== VUE POUR OUVERTURE DE TICKET ==========
 
 class GlobalSupportTicketView(ui.View):
     def __init__(self, author_id, emoji="🎟️"):
@@ -1033,7 +1034,7 @@ class GlobalSupportTicketView(ui.View):
         ))
 
 
-# ========== COMMANDE PANEL ==========
+# ========== COMMANDE POUR PANEL SUPPORT ==========
 
 @bot.command(name="panel-support")
 async def panel_support(ctx):
@@ -1044,6 +1045,49 @@ async def panel_support(ctx):
         description="Cliquez sur le bouton ci-dessous pour ouvrir un ticket support.",
         color=discord.Color.blue()
     ), view=GlobalSupportTicketView(ctx.author.id))
+
+
+# ========== HANDLER POUR L'OUVERTURE DU TICKET ==========
+
+@bot.event
+async def on_interaction(interaction: discord.Interaction):
+    if interaction.type == discord.InteractionType.component and interaction.data.get("custom_id") == "open_global_support":
+        guild = interaction.guild
+        user = interaction.user
+
+        existing_channel = discord.utils.get(guild.text_channels, name=f"ticket-{user.id}")
+        if existing_channel:
+            return await interaction.response.send_message(f"❌ Tu as déjà un ticket ouvert : {existing_channel.mention}", ephemeral=True)
+
+        category = guild.get_channel(TICKET_CATEGORY_ID)
+        if not category or not isinstance(category, discord.CategoryChannel):
+            return await interaction.response.send_message("❌ Catégorie de tickets introuvable.", ephemeral=True)
+
+        overwrites = {
+            guild.default_role: discord.PermissionOverwrite(view_channel=False),
+            user: discord.PermissionOverwrite(view_channel=True, send_messages=True),
+            guild.get_role(SUPPORT_ROLE_ID): discord.PermissionOverwrite(view_channel=True, send_messages=True)
+        }
+
+        ticket_channel = await guild.create_text_channel(
+            name=f"ticket-{user.id}",
+            category=category,
+            overwrites=overwrites,
+            reason="Ticket support global"
+        )
+
+        collection16.insert_one({
+            "user_id": str(user.id),
+            "channel_id": str(ticket_channel.id)
+        })
+
+        embed = discord.Embed(
+            title="📩 Ticket Ouvert",
+            description="Un membre du support va bientôt te répondre.\nUtilise les boutons ci-dessous pour claim ou fermer.",
+            color=discord.Color.green()
+        )
+        await ticket_channel.send(content=user.mention, embed=embed, view=GlobalSupportView())
+        await interaction.response.send_message(f"✅ Ton ticket a été ouvert ici : {ticket_channel.mention}", ephemeral=True)
 
 
 #--------------------------------------------------------------------------- Gestion Clients
