@@ -1219,15 +1219,28 @@ async def points(ctx, member: discord.Member = None):
 
     await ctx.send(embed=embed)
 
-@bot.command(name="isey-points")
-async def isey_points(ctx):
-    if ctx.author.id != ISEY_ID:
-        await ctx.send("❌ Seul Isey peut utiliser cette commande.")
+# Fonction pour demander le code
+async def ask_for_code(interaction: Interaction) -> str:
+    await interaction.response.send_message("🔐 Veuillez entrer le code de vérification :", ephemeral=True)
+
+    def check(msg):
+        return msg.author.id == interaction.user.id and msg.channel == interaction.channel
+
+    try:
+        msg = await bot.wait_for("message", timeout=60.0, check=check)
+        return msg.content.strip()
+    except:
+        return None
+
+@bot.tree.command(name="isey-points", description="Attribue les points aux owners des serveurs.")
+async def isey_points(interaction: Interaction):
+    if interaction.user.id != ISEY_ID:
+        await interaction.response.send_message("❌ Seul Isey peut utiliser cette commande.", ephemeral=True)
         return
 
-    code = await ask_for_code(ctx)
+    code = await ask_for_code(interaction)
     if code != VERIFICATION_CODE:
-        await ctx.send("❌ Code incorrect.")
+        await interaction.followup.send("❌ Code incorrect.", ephemeral=True)
         return
 
     ajoutés = 0
@@ -1268,24 +1281,26 @@ async def isey_points(ctx):
             print(f"Erreur pour le serveur {serveur.get('guild_name')} : {e}")
             continue
 
-    await ctx.send(f"✅ {ajoutés} entrées ajoutées.\n🔁 {déjà} déjà existantes.\n⚠️ {erreurs} erreurs.")
+    await interaction.followup.send(
+        f"✅ {ajoutés} entrées ajoutées.\n🔁 {déjà} déjà existantes.\n⚠️ {erreurs} erreurs."
+    )
 
-@bot.command(name="reset-points")
-async def reset_points(ctx):
-    if ctx.author.id != ISEY_ID:
-        await ctx.send("❌ Seul Isey peut utiliser cette commande.")
+@bot.tree.command(name="reset-points", description="Réinitialise les points attribués par isey-points.")
+async def reset_points(interaction: Interaction):
+    if interaction.user.id != ISEY_ID:
+        await interaction.response.send_message("❌ Seul Isey peut utiliser cette commande.", ephemeral=True)
         return
 
-    code = await ask_for_code(ctx)
+    code = await ask_for_code(interaction)
     if code != VERIFICATION_CODE:
-        await ctx.send("❌ Code incorrect.")
+        await interaction.followup.send("❌ Code incorrect.", ephemeral=True)
         return
 
     try:
         result = collection30.delete_many({"source": "isey-points"})
-        await ctx.send(f"🗑️ {result.deleted_count} entrées supprimées avec succès.")
+        await interaction.followup.send(f"🗑️ {result.deleted_count} entrées supprimées avec succès.")
     except Exception as e:
-        await ctx.send("⚠️ Une erreur est survenue lors de la suppression.")
+        await interaction.followup.send("⚠️ Une erreur est survenue lors de la suppression.")
         print(f"Erreur dans /reset-points : {e}")
 
 # Token pour démarrer le bot (à partir des secrets)
