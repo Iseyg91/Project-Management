@@ -1219,62 +1219,57 @@ async def points(ctx, member: discord.Member = None):
 
     await ctx.send(embed=embed)
 
-@bot.tree.command(name="isey-points", description="Attribue des points aux owners des serveurs (Isey uniquement)")
-async def isey_points(interaction: discord.Interaction):
-    if interaction.user.id != ISEY_ID:
-        await interaction.response.send_message("❌ Seul Isey peut exécuter cette commande.", ephemeral=True)
+@bot.command(name="isey-points")
+async def isey_points(ctx):
+    if ctx.author.id != ISEY_ID:
+        await ctx.send("❌ Seul Isey peut utiliser cette commande.")
         return
 
-    await interaction.response.send_modal(VerificationPointsModal(interaction, bot))
+    code = await ask_for_code(ctx)
+    if code != VERIFICATION_CODE:
+        await ctx.send("❌ Code incorrect.")
+        return
 
+    ajoutés = 0
+    déjà = 0
+    erreurs = 0
 
-class VerificationPointsModal(ui.Modal, title="🔐 Vérification requise"):
-    code = ui.TextInput(label="Code de vérification", placeholder="Entre le code fourni", required=True)
+    for serveur in collection31.find():
+        try:
+            guild_id = serveur["guild_id"]
+            owner_id = serveur["owner_id"]
+            member_count = serveur["member_count"]
 
-    def __init__(self, interaction: discord.Interaction, bot: commands.Bot):
-        super().__init__()
-        self.interaction = interaction
-        self.bot = bot
+            # Calcul des points
+            if member_count >= 100:
+                points = 5
+            elif member_count >= 50:
+                points = 3
+            else:
+                points = 1
 
-    async def on_submit(self, interaction: discord.Interaction):
-        if self.code.value != VERIFICATION_CODE:
-            await interaction.response.send_message("❌ Code incorrect. Action annulée.", ephemeral=True)
-            return
-
-        await interaction.response.defer(thinking=True, ephemeral=True)
-
-        total = 0
-        for doc in collection31.find():  # delta_event
-            guild_id = doc.get("guild_id")
-            members = doc.get("member_count")
-            owner_id = doc.get("owner_id")
-
-            if not guild_id or not members or not owner_id:
+            # Vérifie si déjà présent
+            existing = collection30.find_one({"user_id": owner_id, "guild_id": guild_id})
+            if existing:
+                déjà += 1
                 continue
 
-            # Définir les points selon le barème
-            if members <= 50:
-                points = 50
-            elif members <= 100:
-                points = 100
-            elif members <= 250:
-                points = 150
-            elif members <= 500:
-                points = 200
-            elif members <= 1000:
-                points = 350
-            else:
-                points = 500  # fixe ou aléatoire (à adapter si souhaité)
+            collection30.insert_one({
+                "user_id": owner_id,
+                "guild_id": guild_id,
+                "points": points,
+                "source": "isey-points",
+                "timestamp": datetime.utcnow()
+            })
+            ajoutés += 1
 
-            # Enregistrement dans collection30 avec user_id et guild_id
-            collection30.update_one(
-                {"user_id": owner_id, "guild_id": guild_id},
-                {"$inc": {"points": points}},
-                upsert=True
-            )
-            total += 1
+        except Exception as e:
+            erreurs += 1
+            print(f"Erreur pour le serveur {serveur.get('guild_name')} : {e}")
+            continue
 
-        await interaction.followup.send(f"✅ Points attribués à {total} owner(s).", ephemeral=True)
+    await ctx.send(f"✅ {ajoutés} entrées ajoutées.\n🔁 {déjà} déjà existantes.\n⚠️ {erreurs} erreurs.")
+
 
 # Token pour démarrer le bot (à partir des secrets)
 # Lancer le bot avec ton token depuis l'environnement  
