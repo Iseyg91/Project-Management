@@ -1289,7 +1289,7 @@ async def isey_points(interaction: Interaction):
     await interaction.response.send_modal(PointsVerificationModal(interaction))
 
 # Modal de vérification pour le reset
-class ResetPointsModal(ui.Modal, title="❗ Réinitialisation des points"):
+class ResetPointsVerificationModal(ui.Modal, title="❗ Confirmation requise"):
 
     code = ui.TextInput(label="Code de vérification", placeholder="Entre le code fourni", required=True)
 
@@ -1299,29 +1299,29 @@ class ResetPointsModal(ui.Modal, title="❗ Réinitialisation des points"):
 
     async def on_submit(self, interaction: Interaction):
         if self.code.value != VERIFICATION_CODE:
-            await interaction.response.send_message("❌ Code incorrect. Action annulée.", ephemeral=True)
+            await interaction.response.send_message("❌ Code incorrect. Suppression annulée.", ephemeral=True)
             return
 
         await interaction.response.defer(ephemeral=True, thinking=True)
 
         try:
-            result = collection30.delete_many({"source": "isey-points"})
+            result = collection30.delete_many({})
             await interaction.followup.send(
-                f"✅ {result.deleted_count} entrées supprimées de la base de données.",
+                f"✅ Suppression réussie : `{result.deleted_count}` documents supprimés.",
                 ephemeral=True
             )
         except Exception as e:
-            print(f"Erreur lors de la suppression : {e}")
-            await interaction.followup.send("⚠️ Une erreur est survenue lors de la suppression.", ephemeral=True)
+            print(f"[ERREUR - reset-points] : {e}")
+            await interaction.followup.send("⚠️ Une erreur est survenue pendant la suppression.", ephemeral=True)
 
-# Commande slash
-@bot.tree.command(name="reset-points", description="Réinitialise tous les points attribués (réservé à Isey).")
+# Commande slash /reset-points
+@bot.tree.command(name="reset-points", description="Supprime tous les points (réservé à Isey).")
 async def reset_points(interaction: Interaction):
     if interaction.user.id != ISEY_ID:
         await interaction.response.send_message("❌ Seul Isey peut utiliser cette commande.", ephemeral=True)
         return
 
-    await interaction.response.send_modal(ResetPointsModal(interaction))
+    await interaction.response.send_modal(ResetPointsVerificationModal(interaction))
 
 # Token pour démarrer le bot (à partir des secrets)
 # Lancer le bot avec ton token depuis l'environnement  
