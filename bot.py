@@ -926,6 +926,95 @@ def panel_embed():
         description="Vous souhaitez passer une commande ? N'hésitez pas à ouvrir un ticket et nous serons ravis de vous assister !",
         color=0x2ecc71
     )
+
+#-------------------------------------------------------------------------- Support:
+
+class GlobalSupportModal(ui.Modal, title="Fermer le ticket support"):
+    reason = ui.TextInput(label="Raison de fermeture", style=discord.TextStyle.paragraph)
+
+    async def on_submit(self, interaction: discord.Interaction):
+        channel = interaction.channel
+        guild = interaction.guild
+        reason = self.reason.value
+
+        transcript_channel = guild.get_channel(TRANSCRIPT_CHANNEL_ID)
+
+        messages = [msg async for msg in channel.history(limit=None)]
+        transcript_text = "\n".join([
+            f"{msg.created_at.strftime('%Y-%m-%d %H:%M')} - {msg.author}: {msg.content}"
+            for msg in messages if msg.content
+        ])
+        file = discord.File(fp=io.StringIO(transcript_text), filename="transcript.txt")
+
+        ticket_data = collection16.find_one({"channel_id": str(channel.id)})
+        opened_by = guild.get_member(int(ticket_data["user_id"])) if ticket_data else None
+        claimed_by = None
+
+        async for msg in channel.history(limit=50):
+            if msg.embeds:
+                embed = msg.embeds[0]
+                if embed.footer and "Claimé par" in embed.footer.text:
+                    user_id = int(embed.footer.text.split("Claimé par ")[-1].replace(">", "").replace("<@", ""))
+                    claimed_by = guild.get_member(user_id)
+                    break
+
+        embed_log = discord.Embed(title="🎫 Ticket Support Fermé", color=discord.Color.red())
+        embed_log.add_field(name="Ouvert par", value=opened_by.mention if opened_by else "Inconnu", inline=True)
+        embed_log.add_field(name="Claimé par", value=claimed_by.mention if claimed_by else "Non claim", inline=True)
+        embed_log.add_field(name="Fermé par", value=interaction.user.mention, inline=True)
+        embed_log.add_field(name="Raison", value=reason, inline=False)
+        embed_log.set_footer(text=f"Ticket: {channel.name} | ID: {channel.id}")
+        embed_log.timestamp = discord.utils.utcnow()
+
+        await transcript_channel.send(embed=embed_log, file=file)
+
+        await interaction.response.send_message("✅ Ticket support fermé.", ephemeral=True)
+        await channel.delete()
+        
+class GlobalSupportView(ui.View):
+    def __init__(self):
+        super().__init__(timeout=None)
+
+    @ui.button(label="Claim (Support)", style=ButtonStyle.blurple, custom_id="claim_support")
+    async def claim_ticket(self, interaction: discord.Interaction, button: discord.ui.Button):
+        if SUPPORT_ROLE_ID not in [role.id for role in interaction.user.roles]:
+            return await interaction.response.send_message("❌ Tu n'as pas la permission de claim.", ephemeral=True)
+
+        button.disabled = True
+        await interaction.message.edit(view=self)
+
+        embed = interaction.message.embeds[0]
+        embed.set_footer(text=f"Claimé par {interaction.user.mention}")
+        await interaction.message.edit(embed=embed)
+
+        await interaction.response.send_message(f"📌 Ticket support claim par {interaction.user.mention}.")
+
+    @ui.button(label="Fermer (Support)", style=ButtonStyle.red, custom_id="close_support")
+    async def close_ticket(self, interaction: discord.Interaction, button: discord.ui.Button):
+        await interaction.response.send_modal(GlobalSupportModal())
+
+class GlobalSupportTicketView(ui.View):
+    def __init__(self, author_id, emoji="🎟️"):
+        super().__init__(timeout=None)
+        self.author_id = author_id
+        self.emoji = emoji
+
+        self.add_item(ui.Button(
+            label="Support Global",
+            style=ButtonStyle.primary,
+            custom_id="open_global_support"
+        ))
+        
+@bot.command(name="panel-support")
+async def panel_support(ctx):
+    if ctx.author.id != ISEY_ID:
+        return await ctx.send("❌ Tu n'es pas autorisé à utiliser cette commande.")
+    await ctx.send(embed=discord.Embed(
+        title="🎟️ Panel Support Global",
+        description="Cliquez sur le bouton ci-dessous pour ouvrir un ticket support.",
+        color=discord.Color.blue()
+    ), view=GlobalSupportTicketView(ctx.author.id, emoji="🎟️"))
+
 #--------------------------------------------------------------------------- Gestion Clients
 
 @bot.tree.command(name="add-client", description="Ajoute un client via mention ou ID")
