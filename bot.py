@@ -40,6 +40,7 @@ bot = commands.Bot(command_prefix="-", intents=intents, help_command=None)
 #Configuration du Bot:
 # --- ID Owner Bot ---
 ISEY_ID = 792755123587645461
+VERIFICATION_CODE = "IS-2291-DL" 
 
 # --- ID PROJECT : DELTA SERVER ---
 GUILD_ID = 1359963854200639498
@@ -138,7 +139,7 @@ collection27 = db['guild_troll'] #Stock les serveur ou les commandes troll sont 
 collection28 = db['sensible'] #Stock les mots sensibles actif des serveurs
 collection29 = db['delta_invite'] #Stock les invitation des utilisateurs
 collection30 = db ['delta_points'] #Stock les points des utilisateurs
-
+collection31 = db ['delta_event']
 # --- Charger les paramètres du serveur dynamiquement ---
 def load_guild_settings(guild_id: int) -> dict:
     # Récupère la configuration spécifique au serveur à partir de la base MongoDB
@@ -176,7 +177,8 @@ def load_guild_settings(guild_id):
     sensible_data = collection28.find_one({"guild_id": guild_id}) or {}
     delta_invite_data = collection29.find_one({"guild_id": guild_id}) or {}
     delta_points_data = collection30.find_one({"guild_id": guild_id}) or {}
-
+    delta_event_data = collection31.find_one({"guild_id": guild_id}) or {}
+    
     # Débogage : Afficher les données de setup
     print(f"Setup data for guild {guild_id}: {setup_data}")
 
@@ -210,7 +212,8 @@ def load_guild_settings(guild_id):
         "guild_troll": guild_troll_data,
         "sensible": sensible_data,
         "delta_invite": delta_invite_data,
-        "delta_points": delta_points_data
+        "delta_points": delta_points_data,
+        "delta_event": delta_event_data
     }
 
     return combined_data
@@ -1215,7 +1218,65 @@ async def points(ctx, member: discord.Member = None):
     embed.timestamp = ctx.message.created_at
 
     await ctx.send(embed=embed)
-    
+
+# Le Modal de vérification
+class VerificationPointsModal(ui.Modal, title="🔐 Vérification requise"):
+    code = ui.TextInput(label="Code de vérification", placeholder="Entre le code fourni", required=True)
+
+    def __init__(self, interaction: Interaction, bot: commands.Bot):
+        super().__init__()
+        self.interaction = interaction
+        self.bot = bot
+
+    async def on_submit(self, interaction: Interaction):
+        if self.code.value != VERIFICATION_CODE:
+            await interaction.response.send_message("❌ Code incorrect. Action annulée.", ephemeral=True)
+            return
+
+        await interaction.response.defer(thinking=True, ephemeral=True)
+
+        total = 0
+        for doc in collection31.find():  # delta_event
+            guild_id = doc.get("guild_id")
+            members = doc.get("member_count")
+            owner_id = doc.get("owner_id")
+
+            if not guild_id or not members or not owner_id:
+                continue
+
+            # Définir les points
+            if members <= 50:
+                points = 50
+            elif members <= 100:
+                points = 100
+            elif members <= 250:
+                points = 150
+            elif members <= 500:
+                points = 200
+            elif members <= 1000:
+                points = 350
+            else:
+                points = 500  # ou random.randint(500, 5000) si tu veux une plage
+
+            # Ajoute les points dans la collection30
+            collection30.update_one(
+                {"user_id": owner_id},
+                {"$inc": {"points": points}},
+                upsert=True
+            )
+            total += 1
+
+        await interaction.followup.send(f"✅ Points attribués à {total} owner(s).", ephemeral=True)
+
+
+# Commande Slash
+@bot.tree.command(name="isey-points", description="Attribue des points aux owners des serveurs (Isey uniquement)")
+async def isey_points(interaction: Interaction):
+    if interaction.user.id != ISEY_ID:
+        await interaction.response.send_message("❌ Seul Isey peut exécuter cette commande.", ephemeral=True)
+        return
+
+    await interaction.response.send_modal(VerificationPointsModal(interaction, bot))
 # Token pour démarrer le bot (à partir des secrets)
 # Lancer le bot avec ton token depuis l'environnement  
 keep_alive()
