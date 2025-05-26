@@ -31,7 +31,7 @@ from typing import Optional
 from discord import app_commands, Interaction, Embed, SelectOption
 from discord.ui import View, Select
 import uuid
-rom discord import app_commands, Interaction, Embed, Member, ui
+from discord import app_commands, Interaction, Embed, Member, ui
 from datetime import datetime
 
 token = os.environ['ETHERYA']
@@ -1409,7 +1409,6 @@ async def remove_points(interaction: discord.Interaction, user: discord.Member, 
         )
 
     await interaction.response.send_message(embed=embed)
-
 
 class HistoryView(ui.View):
     def __init__(self, pages):
