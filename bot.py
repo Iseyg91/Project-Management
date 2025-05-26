@@ -36,11 +36,10 @@ token = os.environ['ETHERYA']
 intents = discord.Intents.all()
 start_time = time.time()
 bot = commands.Bot(command_prefix="-", intents=intents, help_command=None)
-
+VERIFICATION_CODE = os.environ['VERIFICATION_CODE']
 #Configuration du Bot:
 # --- ID Owner Bot ---
 ISEY_ID = 792755123587645461
-VERIFICATION_CODE = "IS-2291-DL" 
 
 # --- ID PROJECT : DELTA SERVER ---
 GUILD_ID = 1359963854200639498
