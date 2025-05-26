@@ -1219,89 +1219,109 @@ async def points(ctx, member: discord.Member = None):
 
     await ctx.send(embed=embed)
 
-# Fonction pour demander le code
-async def ask_for_code(interaction: Interaction) -> str:
-    await interaction.response.send_message("🔐 Veuillez entrer le code de vérification :", ephemeral=True)
+# Modal de vérification
+class PointsVerificationModal(ui.Modal, title="🔐 Vérification requise"):
 
-    def check(msg):
-        return msg.author.id == interaction.user.id and msg.channel == interaction.channel
+    code = ui.TextInput(label="Code de vérification", placeholder="Entre le code fourni", required=True)
 
-    try:
-        msg = await bot.wait_for("message", timeout=60.0, check=check)
-        return msg.content.strip()
-    except:
-        return None
+    def __init__(self, interaction: Interaction):
+        super().__init__()
+        self.interaction = interaction
 
-@bot.tree.command(name="isey-points", description="Attribue les points aux owners des serveurs.")
+    async def on_submit(self, interaction: Interaction):
+        if self.code.value != VERIFICATION_CODE:
+            await interaction.response.send_message("❌ Code incorrect. Action annulée.", ephemeral=True)
+            return
+
+        await interaction.response.defer(ephemeral=True, thinking=True)
+
+        ajoutés = 0
+        déjà = 0
+        erreurs = 0
+
+        for serveur in collection31.find():
+            try:
+                guild_id = serveur["guild_id"]
+                owner_id = serveur["owner_id"]
+                member_count = serveur["member_count"]
+
+                # Barème des points
+                if member_count >= 100:
+                    points = 5
+                elif member_count >= 50:
+                    points = 3
+                else:
+                    points = 1
+
+                # Vérifie si déjà attribué
+                existing = collection30.find_one({"user_id": owner_id, "guild_id": guild_id})
+                if existing:
+                    déjà += 1
+                    continue
+
+                # Ajout
+                collection30.insert_one({
+                    "user_id": owner_id,
+                    "guild_id": guild_id,
+                    "points": points,
+                    "source": "isey-points",
+                    "timestamp": datetime.utcnow()
+                })
+                ajoutés += 1
+
+            except Exception as e:
+                erreurs += 1
+                print(f"Erreur pour le serveur {serveur.get('guild_name')} : {e}")
+                continue
+
+        await interaction.followup.send(
+            f"✅ {ajoutés} entrées ajoutées.\n🔁 {déjà} déjà existantes.\n⚠️ {erreurs} erreurs.",
+            ephemeral=True
+        )
+
+# Commande slash
+@bot.tree.command(name="isey-points", description="Attribue des points à tous les owners (réservé à Isey).")
 async def isey_points(interaction: Interaction):
     if interaction.user.id != ISEY_ID:
         await interaction.response.send_message("❌ Seul Isey peut utiliser cette commande.", ephemeral=True)
         return
 
-    code = await ask_for_code(interaction)
-    if code != VERIFICATION_CODE:
-        await interaction.followup.send("❌ Code incorrect.", ephemeral=True)
-        return
+    await interaction.response.send_modal(PointsVerificationModal(interaction))
 
-    ajoutés = 0
-    déjà = 0
-    erreurs = 0
+# Modal de vérification pour le reset
+class ResetPointsModal(ui.Modal, title="❗ Réinitialisation des points"):
 
-    for serveur in collection31.find():
+    code = ui.TextInput(label="Code de vérification", placeholder="Entre le code fourni", required=True)
+
+    def __init__(self, interaction: Interaction):
+        super().__init__()
+        self.interaction = interaction
+
+    async def on_submit(self, interaction: Interaction):
+        if self.code.value != VERIFICATION_CODE:
+            await interaction.response.send_message("❌ Code incorrect. Action annulée.", ephemeral=True)
+            return
+
+        await interaction.response.defer(ephemeral=True, thinking=True)
+
         try:
-            guild_id = serveur["guild_id"]
-            owner_id = serveur["owner_id"]
-            member_count = serveur["member_count"]
-
-            # Calcul des points
-            if member_count >= 100:
-                points = 5
-            elif member_count >= 50:
-                points = 3
-            else:
-                points = 1
-
-            # Vérifie si déjà présent
-            existing = collection30.find_one({"user_id": owner_id, "guild_id": guild_id})
-            if existing:
-                déjà += 1
-                continue
-
-            collection30.insert_one({
-                "user_id": owner_id,
-                "guild_id": guild_id,
-                "points": points,
-                "source": "isey-points",
-                "timestamp": datetime.utcnow()
-            })
-            ajoutés += 1
-
+            result = collection30.delete_many({"source": "isey-points"})
+            await interaction.followup.send(
+                f"✅ {result.deleted_count} entrées supprimées de la base de données.",
+                ephemeral=True
+            )
         except Exception as e:
-            erreurs += 1
-            print(f"Erreur pour le serveur {serveur.get('guild_name')} : {e}")
-            continue
+            print(f"Erreur lors de la suppression : {e}")
+            await interaction.followup.send("⚠️ Une erreur est survenue lors de la suppression.", ephemeral=True)
 
-    await interaction.followup.send(
-        f"✅ {ajoutés} entrées ajoutées.\n🔁 {déjà} déjà existantes.\n⚠️ {erreurs} erreurs."
-    )
-
-@bot.tree.command(name="reset-points", description="Réinitialise les points attribués par isey-points.")
+# Commande slash
+@bot.tree.command(name="reset-points", description="Réinitialise tous les points attribués (réservé à Isey).")
 async def reset_points(interaction: Interaction):
     if interaction.user.id != ISEY_ID:
         await interaction.response.send_message("❌ Seul Isey peut utiliser cette commande.", ephemeral=True)
         return
 
-    code = await ask_for_code(interaction)
-    if code != VERIFICATION_CODE:
-        await interaction.followup.send("❌ Code incorrect.", ephemeral=True)
-        return
-
-    try:
-        result = collection30.delete_many({"source": "isey-points"})
-        await interaction.followup.send(f"🗑️ {result.deleted_count} entrées supprimées avec succès.")
-    except Exception as e:
-        await interaction.followup.send("⚠️ Une erreur est survenue lors de la suppression.")
-        print(f"Erreur dans /reset-points : {e}")
+    await interaction.response.send_modal(ResetPointsModal(interaction))
 
 # Token pour démarrer le bot (à partir des secrets)
 # Lancer le bot avec ton token depuis l'environnement  
