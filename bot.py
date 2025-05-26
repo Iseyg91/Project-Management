@@ -1254,8 +1254,12 @@ async def reset_points(interaction: Interaction):
     await interaction.response.send_modal(ResetPointsVerificationModal(interaction))
 
 @bot.tree.command(name="give-points", description="Donne des points à un utilisateur.")
-@app_commands.describe(user="L'utilisateur à qui donner des points", amount="Le nombre de points à donner")
-async def give_points(interaction: discord.Interaction, user: discord.Member, amount: int):
+@app_commands.describe(
+    user="L'utilisateur à qui donner des points",
+    amount="Le nombre de points à donner",
+    reason="La raison pour laquelle les points sont donnés"
+)
+async def give_points(interaction: discord.Interaction, user: discord.Member, amount: int, reason: str):
     # Vérification des permissions
     if not (interaction.user.guild_permissions.administrator or interaction.user.id == ISEY_ID):
         embed = discord.Embed(
@@ -1270,6 +1274,14 @@ async def give_points(interaction: discord.Interaction, user: discord.Member, am
             title="⚠️ Montant invalide",
             description="Le montant doit être supérieur à 0.",
             color=0xe74c3c
+        )
+        return await interaction.response.send_message(embed=embed, ephemeral=True)
+
+    if not reason.strip():
+        embed = discord.Embed(
+            title="⚠️ Raison manquante",
+            description="Tu dois fournir une raison pour donner des points.",
+            color=0xe67e22
         )
         return await interaction.response.send_message(embed=embed, ephemeral=True)
 
@@ -1292,9 +1304,72 @@ async def give_points(interaction: discord.Interaction, user: discord.Member, am
 
     embed = discord.Embed(
         title="✅ Points ajoutés",
-        description=f"{amount} points ont été donnés à {user.mention} !\nIl a maintenant **{new_points}** points.",
+        description=(
+            f"{amount} points ont été donnés à {user.mention} !\n"
+            f"Il a maintenant **{new_points}** points.\n\n"
+            f"**Raison :** {reason}"
+        ),
         color=0x2ecc71
     )
+    await interaction.response.send_message(embed=embed)
+@bot.tree.command(name="remove-points", description="Retire des points à un utilisateur.")
+@app_commands.describe(
+    user="L'utilisateur à qui retirer des points", 
+    amount="Le nombre de points à retirer",
+    reason="La raison du retrait"
+)
+async def remove_points(interaction: discord.Interaction, user: discord.Member, amount: int, reason: str):
+    # Vérification des permissions
+    if not (interaction.user.guild_permissions.administrator or interaction.user.id == ISEY_ID):
+        embed = discord.Embed(
+            title="❌ Permission refusée",
+            description="Tu n'as pas la permission d'utiliser cette commande.",
+            color=0xe74c3c
+        )
+        return await interaction.response.send_message(embed=embed, ephemeral=True)
+
+    if amount <= 0:
+        embed = discord.Embed(
+            title="⚠️ Montant invalide",
+            description="Le montant doit être supérieur à 0.",
+            color=0xe74c3c
+        )
+        return await interaction.response.send_message(embed=embed, ephemeral=True)
+
+    if not reason.strip():
+        embed = discord.Embed(
+            title="⚠️ Raison requise",
+            description="Tu dois spécifier une raison pour retirer des points.",
+            color=0xe67e22
+        )
+        return await interaction.response.send_message(embed=embed, ephemeral=True)
+
+    # Récupération des données depuis MongoDB
+    user_data = collection30.find_one({"user_id": user.id, "guild_id": interaction.guild.id})
+
+    if user_data:
+        current_points = user_data.get("points", 0)
+        new_points = max(0, current_points - amount)
+        collection30.update_one(
+            {"user_id": user.id, "guild_id": interaction.guild.id},
+            {"$set": {"points": new_points}}
+        )
+        embed = discord.Embed(
+            title="✅ Points retirés",
+            description=(
+                f"{amount} points ont été retirés à {user.mention}.\n"
+                f"Il lui reste maintenant **{new_points}** points.\n\n"
+                f"**Raison :** {reason}"
+            ),
+            color=0xf1c40f
+        )
+    else:
+        embed = discord.Embed(
+            title="⚠️ Utilisateur introuvable",
+            description=f"{user.mention} n’a aucun point enregistré.",
+            color=0xe74c3c
+        )
+    
     await interaction.response.send_message(embed=embed)
 
 # Token pour démarrer le bot (à partir des secrets)
