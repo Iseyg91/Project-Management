@@ -1219,16 +1219,24 @@ async def points(ctx, member: discord.Member = None):
 
     await ctx.send(embed=embed)
 
-# Le Modal de vérification
+@bot.tree.command(name="isey-points", description="Attribue des points aux owners des serveurs (Isey uniquement)")
+async def isey_points(interaction: discord.Interaction):
+    if interaction.user.id != ISEY_ID:
+        await interaction.response.send_message("❌ Seul Isey peut exécuter cette commande.", ephemeral=True)
+        return
+
+    await interaction.response.send_modal(VerificationPointsModal(interaction, bot))
+
+
 class VerificationPointsModal(ui.Modal, title="🔐 Vérification requise"):
     code = ui.TextInput(label="Code de vérification", placeholder="Entre le code fourni", required=True)
 
-    def __init__(self, interaction: Interaction, bot: commands.Bot):
+    def __init__(self, interaction: discord.Interaction, bot: commands.Bot):
         super().__init__()
         self.interaction = interaction
         self.bot = bot
 
-    async def on_submit(self, interaction: Interaction):
+    async def on_submit(self, interaction: discord.Interaction):
         if self.code.value != VERIFICATION_CODE:
             await interaction.response.send_message("❌ Code incorrect. Action annulée.", ephemeral=True)
             return
@@ -1244,7 +1252,7 @@ class VerificationPointsModal(ui.Modal, title="🔐 Vérification requise"):
             if not guild_id or not members or not owner_id:
                 continue
 
-            # Définir les points
+            # Définir les points selon le barème
             if members <= 50:
                 points = 50
             elif members <= 100:
@@ -1256,11 +1264,11 @@ class VerificationPointsModal(ui.Modal, title="🔐 Vérification requise"):
             elif members <= 1000:
                 points = 350
             else:
-                points = 500  # ou random.randint(500, 5000) si tu veux une plage
+                points = 500  # fixe ou aléatoire (à adapter si souhaité)
 
-            # Ajoute les points dans la collection30
+            # Enregistrement dans collection30 avec user_id et guild_id
             collection30.update_one(
-                {"user_id": owner_id},
+                {"user_id": owner_id, "guild_id": guild_id},
                 {"$inc": {"points": points}},
                 upsert=True
             )
@@ -1268,15 +1276,6 @@ class VerificationPointsModal(ui.Modal, title="🔐 Vérification requise"):
 
         await interaction.followup.send(f"✅ Points attribués à {total} owner(s).", ephemeral=True)
 
-
-# Commande Slash
-@bot.tree.command(name="isey-points", description="Attribue des points aux owners des serveurs (Isey uniquement)")
-async def isey_points(interaction: Interaction):
-    if interaction.user.id != ISEY_ID:
-        await interaction.response.send_message("❌ Seul Isey peut exécuter cette commande.", ephemeral=True)
-        return
-
-    await interaction.response.send_modal(VerificationPointsModal(interaction, bot))
 # Token pour démarrer le bot (à partir des secrets)
 # Lancer le bot avec ton token depuis l'environnement  
 keep_alive()
