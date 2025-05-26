@@ -1202,15 +1202,14 @@ async def points(ctx, member: discord.Member = None):
         title="<a:fete:1375944789035319470> Événement de Lancement - Points Collectés !",
         description=(
             f"<a:blblbl:1376554956550705182> **{member.mention}**, voici tes points actuel :\n\n"
-            f"> <a:fleche3:1290077283100397672> **{points}** points\n\n"
+            f"> <a:fleche3:1376557416216268921> **{points}** points\n\n"
             f"Continue à participer pour en gagner encore plus ! "
         ),
         color=discord.Color.gold()
     )
     embed.set_thumbnail(url=member.display_avatar.url)
-    embed.set_author(name=member.name, icon_url=member.display_avatar.url)
     embed.set_footer(
-        text="Delta • Système de points événementiel <a:trophee:1289678773700268183>",
+        text="Delta • Système de points événementiel",
         icon_url=ctx.guild.icon.url if ctx.guild.icon else None
     )
     embed.timestamp = ctx.message.created_at
