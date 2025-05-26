@@ -932,8 +932,6 @@ def panel_embed():
     )
 
 #-------------------------------------------------------------------------- Support:
-# ========== MODAL ==========
-
 class GlobalSupportModal(ui.Modal):
     def __init__(self):
         super().__init__(title="Fermer le ticket support")
@@ -944,63 +942,63 @@ class GlobalSupportModal(ui.Modal):
         )
         self.add_item(self.reason)
 
-async def on_submit(self, interaction: discord.Interaction):
-    try:
-        channel = interaction.channel
-        guild = interaction.guild
-        reason = self.reason.value
+    async def on_submit(self, interaction: discord.Interaction):
+        try:
+            channel = interaction.channel
+            guild = interaction.guild
+            reason = self.reason.value
 
-        transcript_channel = guild.get_channel(TRANSCRIPT_CHANNEL_ID)
-        if not transcript_channel:
-            return await interaction.response.send_message("❌ Salon de transcript introuvable.", ephemeral=True)
+            transcript_channel = guild.get_channel(TRANSCRIPT_CHANNEL_ID)
+            if not transcript_channel:
+                return await interaction.response.send_message("❌ Salon de transcript introuvable.", ephemeral=True)
 
-        # Génération du transcript
-        messages = [msg async for msg in channel.history(limit=None)]
-        transcript_text = "\n".join(
-            f"{msg.created_at.strftime('%Y-%m-%d %H:%M')} - {msg.author}: {msg.content}"
-            for msg in messages if msg.content
-        )
-        file = discord.File(fp=io.StringIO(transcript_text), filename="transcript.txt")
+            # Génération du transcript
+            messages = [msg async for msg in channel.history(limit=None)]
+            transcript_text = "\n".join(
+                f"{msg.created_at.strftime('%Y-%m-%d %H:%M')} - {msg.author}: {msg.content}"
+                for msg in messages if msg.content
+            )
+            file = discord.File(fp=io.StringIO(transcript_text), filename="transcript.txt")
 
-        # Récupération des données du ticket
-        ticket_data = collection16.find_one({"channel_id": str(channel.id)})
-        opened_by = guild.get_member(int(ticket_data["user_id"])) if ticket_data else None
-        claimed_by = None
+            # Récupération des données du ticket
+            ticket_data = collection16.find_one({"channel_id": str(channel.id)})
+            opened_by = guild.get_member(int(ticket_data["user_id"])) if ticket_data else None
+            claimed_by = None
 
-        # Recherche du membre ayant claim le ticket
-        async for msg in channel.history(limit=50):
-            if msg.embeds:
-                embed = msg.embeds[0]
-                if embed.footer and "Claimé par" in embed.footer.text:
-                    try:
-                        user_id = int(embed.footer.text.split("Claimé par ")[-1].replace(">", "").replace("<@", ""))
-                        claimed_by = guild.get_member(user_id)
-                    except:
-                        pass
-                    break
+            # Recherche du membre ayant claim le ticket
+            async for msg in channel.history(limit=50):
+                if msg.embeds:
+                    embed = msg.embeds[0]
+                    if embed.footer and "Claimé par" in embed.footer.text:
+                        try:
+                            user_id = int(embed.footer.text.split("Claimé par ")[-1].replace(">", "").replace("<@", ""))
+                            claimed_by = guild.get_member(user_id)
+                        except:
+                            pass
+                        break
 
-        # Création de l'embed de log
-        embed_log = discord.Embed(title="🎫 Ticket Support Fermé", color=discord.Color.red())
-        embed_log.add_field(name="Ouvert par", value=opened_by.mention if opened_by else "Inconnu", inline=True)
-        embed_log.add_field(name="Claimé par", value=claimed_by.mention if claimed_by else "Non claim", inline=True)
-        embed_log.add_field(name="Fermé par", value=interaction.user.mention, inline=True)
-        embed_log.add_field(name="Raison", value=reason, inline=False)
-        embed_log.set_footer(text=f"Ticket: {channel.name} | ID: {channel.id}")
-        embed_log.timestamp = discord.utils.utcnow()
+            # Création de l'embed de log
+            embed_log = discord.Embed(title="🎫 Ticket Support Fermé", color=discord.Color.red())
+            embed_log.add_field(name="Ouvert par", value=opened_by.mention if opened_by else "Inconnu", inline=True)
+            embed_log.add_field(name="Claimé par", value=claimed_by.mention if claimed_by else "Non claim", inline=True)
+            embed_log.add_field(name="Fermé par", value=interaction.user.mention, inline=True)
+            embed_log.add_field(name="Raison", value=reason, inline=False)
+            embed_log.set_footer(text=f"Ticket: {channel.name} | ID: {channel.id}")
+            embed_log.timestamp = discord.utils.utcnow()
 
-        await transcript_channel.send(embed=embed_log, file=file)
+            await transcript_channel.send(embed=embed_log, file=file)
 
-        # Confirmation à l'utilisateur
-        await interaction.response.send_message("✅ Ticket support fermé.", ephemeral=True)
+            # Confirmation à l'utilisateur
+            await interaction.response.send_message("✅ Ticket support fermé.", ephemeral=True)
 
-        # Renommage du salon avant suppression
-        await channel.edit(name=f"︱🚫・{interaction.user.name}")
-        await asyncio.sleep(2)  # Laisse le renommage s'afficher un court instant
-        await channel.delete()
+            # Renommage du salon avant suppression
+            await channel.edit(name=f"︱🚫・{interaction.user.name}")
+            await asyncio.sleep(2)
+            await channel.delete()
 
-    except Exception as e:
-        print(f"Erreur dans la modal : {e}")
-        await interaction.response.send_message("❌ Une erreur est survenue.", ephemeral=True)
+        except Exception as e:
+            print(f"Erreur dans la modal : {e}")
+            await interaction.response.send_message("❌ Une erreur est survenue.", ephemeral=True)
 
 # ========== VUE SUPPORT ==========
 
