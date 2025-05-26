@@ -815,7 +815,6 @@ class ClaimCloseView(ui.View):
     async def close_ticket(self, interaction: discord.Interaction, button: discord.ui.Button):
         await interaction.response.send_modal(TicketModal())
 
-# --- VIEW POUR CRÉATION DE TICKET ---
 class TicketView(ui.View):
     def __init__(self, author_id, emoji="📩"):
         super().__init__(timeout=None)
@@ -825,9 +824,9 @@ class TicketView(ui.View):
         self.add_item(ui.Button(
             label="Passé Commande",
             style=ButtonStyle.success,
-            custom_id="open_ticket",
-            emoji=self.emoji
+            custom_id="open_ticket"
         ))
+
 
 @bot.event
 async def on_interaction(interaction: discord.Interaction):
