@@ -1270,6 +1270,23 @@ async def isey_points(ctx):
 
     await ctx.send(f"✅ {ajoutés} entrées ajoutées.\n🔁 {déjà} déjà existantes.\n⚠️ {erreurs} erreurs.")
 
+@bot.command(name="reset-points")
+async def reset_points(ctx):
+    if ctx.author.id != ISEY_ID:
+        await ctx.send("❌ Seul Isey peut utiliser cette commande.")
+        return
+
+    code = await ask_for_code(ctx)
+    if code != VERIFICATION_CODE:
+        await ctx.send("❌ Code incorrect.")
+        return
+
+    try:
+        result = collection30.delete_many({"source": "isey-points"})
+        await ctx.send(f"🗑️ {result.deleted_count} entrées supprimées avec succès.")
+    except Exception as e:
+        await ctx.send("⚠️ Une erreur est survenue lors de la suppression.")
+        print(f"Erreur dans /reset-points : {e}")
 
 # Token pour démarrer le bot (à partir des secrets)
 # Lancer le bot avec ton token depuis l'environnement  
