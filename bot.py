@@ -1076,7 +1076,7 @@ async def on_interaction(interaction: discord.Interaction):
         }
 
         ticket_channel = await guild.create_text_channel(
-            name=f"ticket-{user.id}",
+            name=f"︱🚫・{user.name}",
             category=category,
             overwrites=overwrites,
             reason="Ticket support global"
