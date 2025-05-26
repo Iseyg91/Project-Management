@@ -33,7 +33,6 @@ from discord.ui import View, Select
 import uuid
 
 token = os.environ['ETHERYA']
-VERIFICATION_CODE = os.environ['VERIFICATION_CODE']
 intents = discord.Intents.all()
 start_time = time.time()
 bot = commands.Bot(command_prefix="-", intents=intents, help_command=None)
@@ -41,6 +40,7 @@ bot = commands.Bot(command_prefix="-", intents=intents, help_command=None)
 #Configuration du Bot:
 # --- ID Owner Bot ---
 ISEY_ID = 792755123587645461
+VERIFICATION_CODE = "IS-2291-DL" 
 
 # --- ID PROJECT : DELTA SERVER ---
 GUILD_ID = 1359963854200639498
@@ -1218,6 +1218,32 @@ async def points(ctx, member: discord.Member = None):
     embed.timestamp = ctx.message.created_at
 
     await ctx.send(embed=embed)
+
+# Modal de vérification pour le reset
+class ResetPointsVerificationModal(ui.Modal, title="❗ Confirmation requise"):
+
+    code = ui.TextInput(label="Code de vérification", placeholder="Entre le code fourni", required=True)
+
+    def __init__(self, interaction: Interaction):
+        super().__init__()
+        self.interaction = interaction
+
+    async def on_submit(self, interaction: Interaction):
+        if self.code.value != VERIFICATION_CODE:
+            await interaction.response.send_message("❌ Code incorrect. Suppression annulée.", ephemeral=True)
+            return
+
+        await interaction.response.defer(ephemeral=True, thinking=True)
+
+        try:
+            result = collection30.delete_many({})
+            await interaction.followup.send(
+                f"✅ Suppression réussie : `{result.deleted_count}` documents supprimés.",
+                ephemeral=True
+            )
+        except Exception as e:
+            print(f"[ERREUR - reset-points] : {e}")
+            await interaction.followup.send("⚠️ Une erreur est survenue pendant la suppression.", ephemeral=True)
 
 # Commande slash /reset-points
 @bot.tree.command(name="reset-points", description="Supprime tous les points (réservé à Isey).")
