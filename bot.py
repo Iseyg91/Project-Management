@@ -51,6 +51,7 @@ STATUT_CHANNEL_ID = 1360361796464021745
 STATUT_MESSAGE_ID = 9876543210  # à remplacer
 PING_ROLES = "<@&1376821268447236248> <@&1361306900981092548>"
 DELTA_ID = 1356693934012891176
+ID_CANAL = 1376899306719547503
 # --- ID Staff Serveur Delta ---
 PROJECT_DELTA = 1359963854200639498
 STAFF_PROJECT = 1359963854422933876
@@ -249,26 +250,32 @@ async def add_voice_points():
 
 @tasks.loop(seconds=30)
 async def verifier_presence_delta():
-    channel = bot.get_channel(STATUT_CHANNEL_ID)
-    if channel is None:
+    canal_presence = bot.get_channel(ID_CANAL)  # Salon où Delta envoie les messages
+    salon_alerte = bot.get_channel(STATUT_CHANNEL_ID)  # Salon d’alerte
+
+    if canal_presence is None or salon_alerte is None:
         return
 
-    messages = [msg async for msg in channel.history(limit=5)]
     maintenant = datetime.now(timezone.utc)
 
-    # Cherche le dernier message de Delta
-    dernier = next((m for m in messages if m.author.id == DELTA_ID), None)
+    # Cherche le dernier message de Delta dans le salon de présence
+    async for msg in canal_presence.history(limit=10):
+        if msg.author.id == DELTA_ID:
+            # Si le message est récent, ne rien faire
+            if maintenant - msg.created_at <= timedelta(minutes=2):
+                return
+            break  # Message trouvé, mais trop vieux
 
-    if not dernier or (maintenant - dernier.created_at > timedelta(minutes=2)):
-        await channel.send(
-            content=PING_ROLES,
-            embed=discord.Embed(
-                title="🚨 Project : Delta semble hors ligne !",
-                description="Aucun message de présence détecté depuis plus de 2 minutes.",
-                color=discord.Color.red(),
-                timestamp=datetime.utcnow()
-            )
+    # Aucun message récent de Delta : on alerte
+    await salon_alerte.send(
+        content=PING_ROLES,
+        embed=discord.Embed(
+            title="🚨 Project : Delta semble hors ligne !",
+            description="Aucun message de présence détecté depuis plus de 2 minutes.",
+            color=discord.Color.red(),
+            timestamp=maintenant
         )
+    )
 
 # Événement quand le bot est prêt
 @bot.event
