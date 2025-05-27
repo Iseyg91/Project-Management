@@ -994,6 +994,26 @@ def panel_embed():
         color=0x2ecc71
     )
 
+@bot.command(name="rename")
+async def rename_ticket(ctx, *, new_name: str):
+    # Vérifie que la commande est utilisée dans un salon de ticket
+    ticket_data = collection16.find_one({"channel_id": str(ctx.channel.id)})
+    if not ticket_data:
+        return await ctx.send("❌ Cette commande ne peut être utilisée que dans un ticket.", delete_after=10)
+
+    # Vérifie que l'auteur a le rôle staff
+    if SUPPORT_ROLE_ID not in [role.id for role in ctx.author.roles]:
+        return await ctx.send("❌ Tu n'as pas la permission d'utiliser cette commande.", delete_after=10)
+
+    # Renommage du salon
+    try:
+        await ctx.channel.edit(name=new_name)
+        await ctx.send(f"✅ Le ticket a été renommé en **{new_name}**.")
+    except discord.Forbidden:
+        await ctx.send("❌ Je n'ai pas la permission de renommer ce salon.")
+    except discord.HTTPException:
+        await ctx.send("❌ Une erreur est survenue lors du renommage.")
+
 #-------------------------------------------------------------------------- Support:
 class GlobalSupportModal(ui.Modal):
     def __init__(self):
