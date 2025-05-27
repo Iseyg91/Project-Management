@@ -248,10 +248,6 @@ async def add_voice_points():
                     upsert=True
                 )
 
-# Variables globales pour le système d'alerte
-dernier_ping = None
-delta_en_ligne = True
-
 @tasks.loop(seconds=30)
 async def verifier_presence_delta():
     global dernier_ping, delta_en_ligne
@@ -271,18 +267,17 @@ async def verifier_presence_delta():
             break
 
     if dernier_msg_delta and maintenant - dernier_msg_delta.created_at <= timedelta(minutes=2):
-        # Delta est actif → réinitialiser
+        # Delta est actif
         if not delta_en_ligne:
-            print("✅ Delta est de retour, alerte réinitialisée.")
-        
-        # ✅ Réponse stylée du bot à Delta
-        await canal_presence.send(
-            embed=discord.Embed(
-                description=f"<a:b_yes:1376916710468354078> | Présence confirmée :**{dernier_msg_delta.author.name}** est actif..",
-                color=discord.Color.green(),
-                timestamp=maintenant
+            # Delta vient juste de revenir en ligne → envoyer confirmation
+            await canal_presence.send(
+                embed=discord.Embed(
+                    description=f"<a:b_yes:1376916710468354078> | Présence confirmée : **{dernier_msg_delta.author.name}** est actif.",
+                    color=discord.Color.green(),
+                    timestamp=maintenant
+                )
             )
-        )
+            print("✅ Delta est de retour, alerte réinitialisée.")
 
         delta_en_ligne = True
         dernier_ping = None
@@ -290,7 +285,7 @@ async def verifier_presence_delta():
 
     # Si Delta semble hors ligne
     if delta_en_ligne:
-        # Première fois qu'on le détecte hors ligne
+        # Première détection d'absence → envoyer alerte
         await salon_alerte.send(
             content=PING_ROLES,
             embed=discord.Embed(
@@ -304,7 +299,7 @@ async def verifier_presence_delta():
         dernier_ping = maintenant
         delta_en_ligne = False
     else:
-        # Delta est toujours hors ligne → vérifier si on doit relancer une alerte après 10 minutes
+        # Delta est toujours hors ligne → relance alerte toutes les 10 minutes
         if dernier_ping and maintenant - dernier_ping >= timedelta(minutes=10):
             await salon_alerte.send(
                 content=PING_ROLES,
