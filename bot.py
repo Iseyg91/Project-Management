@@ -46,6 +46,11 @@ ISEY_ID = 792755123587645461
 # --- ID PROJECT : DELTA SERVER ---
 GUILD_ID = 1359963854200639498
 
+# --- ID DELTA PING ---
+STATUT_CHANNEL_ID = 1360361796464021745
+STATUT_MESSAGE_ID = 9876543210  # à remplacer
+PING_ROLES = "<@&1376821268447236248> <@&1361306900981092548>"
+
 # --- ID Staff Serveur Delta ---
 PROJECT_DELTA = 1359963854200639498
 STAFF_PROJECT = 1359963854422933876
@@ -242,6 +247,29 @@ async def add_voice_points():
                     upsert=True
                 )
 
+@tasks.loop(seconds=30)
+async def verifier_presence_delta():
+    channel = bot.get_channel(STATUT_CHANNEL_ID)
+    if channel is None:
+        return
+
+    messages = [msg async for msg in channel.history(limit=5)]
+    maintenant = datetime.now(timezone.utc)
+
+    # Cherche le dernier message de Delta
+    dernier = next((m for m in messages if m.author.id == DELTA_ID), None)
+
+    if not dernier or (maintenant - dernier.created_at > timedelta(minutes=2)):
+        await channel.send(
+            content=PING_ROLES,
+            embed=discord.Embed(
+                title="🚨 Project : Delta semble hors ligne !",
+                description="Aucun message de présence détecté depuis plus de 2 minutes.",
+                color=discord.Color.red(),
+                timestamp=datetime.utcnow()
+            )
+        )
+
 # Événement quand le bot est prêt
 @bot.event
 async def on_ready():
@@ -253,7 +281,8 @@ async def on_ready():
     bot.uptime = time.time()
     # Démarrer les tâches de fond
     add_voice_points.start()
-
+    verifier_presence_delta.start()
+    
     guild_count = len(bot.guilds)
     member_count = sum(guild.member_count for guild in bot.guilds)
 
