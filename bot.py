@@ -283,7 +283,6 @@ async def verifier_presence_delta():
                 timestamp=maintenant
             )
         )
-)
 
         delta_en_ligne = True
         dernier_ping = None
