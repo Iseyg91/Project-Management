@@ -1014,6 +1014,17 @@ async def rename_ticket(ctx, *, new_name: str):
     except discord.HTTPException:
         await ctx.send("❌ Une erreur est survenue lors du renommage.")
 
+@bot.tree.command(name="close", description="Fermer ce ticket (réservé au staff)")
+async def close_ticket(interaction: discord.Interaction):
+    ticket_data = collection16.find_one({"channel_id": str(interaction.channel.id)})
+    if not ticket_data:
+        return await interaction.response.send_message("❌ Cette commande ne peut être utilisée que dans un ticket.", ephemeral=True)
+
+    if SUPPORT_ROLE_ID not in [role.id for role in interaction.user.roles]:
+        return await interaction.response.send_message("❌ Tu n'as pas la permission de fermer ce ticket.", ephemeral=True)
+
+    await interaction.response.send_modal(TicketModal())
+
 #-------------------------------------------------------------------------- Support:
 class GlobalSupportModal(ui.Modal):
     def __init__(self):
