@@ -247,6 +247,8 @@ async def add_voice_points():
                     {"$inc": {"points": 1}},
                     upsert=True
                 )
+dernier_ping = None
+delta_en_ligne = True
 
 @tasks.loop(seconds=30)
 async def verifier_presence_delta():
