@@ -271,9 +271,21 @@ async def verifier_presence_delta():
             break
 
     if dernier_msg_delta and maintenant - dernier_msg_delta.created_at <= timedelta(minutes=2):
-        # Delta est actif -> réinitialiser
+        # Delta est actif → réinitialiser
         if not delta_en_ligne:
             print("✅ Delta est de retour, alerte réinitialisée.")
+        
+        # ✅ Réponse stylée du bot à Delta
+        await canal_presence.send(
+            embed=discord.Embed(
+                description=f"<a:check_verifie:1376912925660676217> | **Présence confirmée :**{dernier_msg_delta.author.name}** est actif..",
+                color=discord.Color.green(),
+                timestamp=maintenant
+            )
+        )
+await channel.send(
+)
+
         delta_en_ligne = True
         dernier_ping = None
         return
