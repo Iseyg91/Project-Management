@@ -237,7 +237,7 @@ GUILD_SETTINGS = {}
 
 #------------------------------------------------------------------------- Code Protection:                
 
-@tasks.loop(minutes=1)
+@tasks.loop(minutes=5)
 async def add_voice_points():
     for guild in bot.guilds:
         for vc in guild.voice_channels:
@@ -253,7 +253,7 @@ async def add_voice_points():
 dernier_ping = None
 delta_en_ligne = True
 
-@tasks.loop(seconds=30)
+@tasks.loop(minutes=1)
 async def verifier_presence_delta():
     canal_verification = bot.get_channel(ID_CANAL)  # Salon où Delta envoie ses messages de présence
     canal_alerte = bot.get_channel(STATUT_CHANNEL_ID)  # Salon où tu veux envoyer l'alerte
@@ -400,7 +400,7 @@ async def on_message(message):
             upsert=True
         )
         message_cooldowns[key] = True
-        await asyncio.sleep(60)
+        await asyncio.sleep(300)
         del message_cooldowns[key]
 
     # ----- Partie 4 : Autoriser les commandes -----
