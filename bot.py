@@ -50,7 +50,7 @@ GUILD_ID = 1359963854200639498
 STATUT_CHANNEL_ID = 1360361796464021745
 STATUT_MESSAGE_ID = 9876543210  # à remplacer
 PING_ROLES = "<@&1376821268447236248> <@&1361306900981092548>"
-DELTA_ID = 1356693934012891176
+PROJECT_DELTA_ID = 1356693934012891176
 ID_CANAL = 1376899306719547503
 
 # --- ID Staff Serveur Delta ---
@@ -254,18 +254,20 @@ delta_en_ligne = True
 
 @tasks.loop(seconds=30)
 async def verifier_presence_delta():
-    channel = bot.get_channel(STATUT_CHANNEL_ID)
-    if channel is None:
+    canal_verification = bot.get_channel(ID_CANAL)  # Salon où Delta envoie ses messages de présence
+    canal_alerte = bot.get_channel(STATUT_CHANNEL_ID)  # Salon où tu veux envoyer l'alerte
+
+    if not canal_verification or not canal_alerte:
         return
 
-    messages = [msg async for msg in channel.history(limit=5)]
+    messages = [msg async for msg in canal_verification.history(limit=5)]
     maintenant = datetime.now(timezone.utc)
 
     # Cherche le dernier message de Delta
     dernier = next((m for m in messages if m.author.id == DELTA_ID), None)
 
     if not dernier or (maintenant - dernier.created_at > timedelta(minutes=2)):
-        await channel.send(
+        await canal_alerte.send(
             content=PING_ROLES,
             embed=discord.Embed(
                 title="🚨 Project : Delta semble hors ligne !",
@@ -360,6 +362,18 @@ reaction_emojis = [
     "<a:heart:1376670580283146371>"
 ]
 
+# Cooldown pour éviter le spam de points
+message_cooldowns = {}
+
+# Liste des emojis animés à alterner
+reaction_emojis = [
+    "<a:4a_bubbleheart:1376670552676368557>",
+    "<a:white_heart:1376670622071128185>",
+    "<a:Heart:1376670687497818162>",
+    "<a:pink_blue_heart:1376670720301469786>",
+    "<a:heart:1376670580283146371>"
+]
+
 # Index pour alterner les emojis
 current_emoji_index = 0
 
@@ -379,15 +393,16 @@ async def on_message(message):
             print(f"Erreur lors de la réaction : {e}")
 
     # ----- Partie 2 : Confirmation de présence dans un autre salon -----
-    if message.channel.id == ID_CANAL:
+    # Remplace PROJECT_DELTA_ID par l'ID du bot Project : Delta
+    if message.channel.id == ID_CANAL and message.author.id == PROJECT_DELTA_ID:
+        canal_presence = bot.get_channel(STATUT_CHANNEL_ID)
         maintenant = datetime.utcnow()
         embed = discord.Embed(
             description=f"<a:b_yes:1376916710468354078> | Présence confirmée : **{message.author.name}** est actif.",
             color=discord.Color.green(),
             timestamp=maintenant
         )
-        await message.channel.send(embed=embed)
-
+        await canal_presence.send(embed=embed)
     # ----- Partie 3 : Système de points avec cooldown -----
     key = f"{message.guild.id}-{message.author.id}"
     if key not in message_cooldowns:
