@@ -278,7 +278,7 @@ async def verifier_presence_delta():
         # ✅ Réponse stylée du bot à Delta
         await canal_presence.send(
             embed=discord.Embed(
-                description=f"<a:check_verifie:1376912925660676217> | **Présence confirmée :**{dernier_msg_delta.author.name}** est actif..",
+                description=f"<a:b_yes:1376916710468354078> | **Présence confirmée :**{dernier_msg_delta.author.name}** est actif..",
                 color=discord.Color.green(),
                 timestamp=maintenant
             )
