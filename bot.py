@@ -52,6 +52,7 @@ STATUT_MESSAGE_ID = 9876543210  # à remplacer
 PING_ROLES = "<@&1376821268447236248> <@&1361306900981092548>"
 DELTA_ID = 1356693934012891176
 ID_CANAL = 1376899306719547503
+
 # --- ID Staff Serveur Delta ---
 PROJECT_DELTA = 1359963854200639498
 STAFF_PROJECT = 1359963854422933876
@@ -415,14 +416,13 @@ async def on_message(message):
 
     # ----- Partie 2 : Confirmation de présence dans un autre salon -----
     if message.channel.id == ID_CANAL:
-        canal_presence = bot.get_channel(STATUT_CHANNEL_ID)
         maintenant = datetime.utcnow()
         embed = discord.Embed(
             description=f"<a:b_yes:1376916710468354078> | Présence confirmée : **{message.author.name}** est actif.",
             color=discord.Color.green(),
             timestamp=maintenant
         )
-        await canal_presence.send(embed=embed)
+        await message.channel.send(embed=embed)
 
     # ----- Partie 3 : Système de points avec cooldown -----
     key = f"{message.guild.id}-{message.author.id}"
