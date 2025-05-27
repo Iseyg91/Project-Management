@@ -391,7 +391,6 @@ async def on_message(message):
             timestamp=maintenant
         )
         await canal_presence.send(embed=embed)
-
     # ----- Partie 3 : Système de points avec cooldown -----
     key = f"{message.guild.id}-{message.author.id}"
     if key not in message_cooldowns:
@@ -406,7 +405,6 @@ async def on_message(message):
 
     # ----- Partie 4 : Autoriser les commandes -----
     await bot.process_commands(message)
-
 #-------------------------------------------------------------------------- Bot Event:
 @bot.event
 async def on_message_delete(message):
