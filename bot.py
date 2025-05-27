@@ -248,34 +248,65 @@ async def add_voice_points():
                     upsert=True
                 )
 
+# Variables globales pour le système d'alerte
+dernier_ping = None
+delta_en_ligne = True
+
 @tasks.loop(seconds=30)
 async def verifier_presence_delta():
-    canal_presence = bot.get_channel(ID_CANAL)  # Salon où Delta envoie les messages
-    salon_alerte = bot.get_channel(STATUT_CHANNEL_ID)  # Salon d’alerte
+    global dernier_ping, delta_en_ligne
+
+    canal_presence = bot.get_channel(ID_CANAL)
+    salon_alerte = bot.get_channel(STATUT_CHANNEL_ID)
+    maintenant = datetime.now(timezone.utc)
 
     if canal_presence is None or salon_alerte is None:
         return
 
-    maintenant = datetime.now(timezone.utc)
-
-    # Cherche le dernier message de Delta dans le salon de présence
+    # Cherche un message récent de Delta
+    dernier_msg_delta = None
     async for msg in canal_presence.history(limit=10):
         if msg.author.id == DELTA_ID:
-            # Si le message est récent, ne rien faire
-            if maintenant - msg.created_at <= timedelta(minutes=2):
-                return
-            break  # Message trouvé, mais trop vieux
+            dernier_msg_delta = msg
+            break
 
-    # Aucun message récent de Delta : on alerte
-    await salon_alerte.send(
-        content=PING_ROLES,
-        embed=discord.Embed(
-            title="🚨 Project : Delta semble hors ligne !",
-            description="Aucun message de présence détecté depuis plus de 2 minutes.",
-            color=discord.Color.red(),
-            timestamp=maintenant
+    if dernier_msg_delta and maintenant - dernier_msg_delta.created_at <= timedelta(minutes=2):
+        # Delta est actif -> réinitialiser
+        if not delta_en_ligne:
+            print("✅ Delta est de retour, alerte réinitialisée.")
+        delta_en_ligne = True
+        dernier_ping = None
+        return
+
+    # Si Delta semble hors ligne
+    if delta_en_ligne:
+        # Première fois qu'on le détecte hors ligne
+        await salon_alerte.send(
+            content=PING_ROLES,
+            embed=discord.Embed(
+                title="🚨 Project : Delta semble hors ligne !",
+                description="Aucun message de présence détecté depuis plus de 2 minutes.",
+                color=discord.Color.red(),
+                timestamp=maintenant
+            )
         )
-    )
+        print("⚠️ Alerte envoyée pour Delta.")
+        dernier_ping = maintenant
+        delta_en_ligne = False
+    else:
+        # Delta est toujours hors ligne → vérifier si on doit relancer une alerte après 10 minutes
+        if dernier_ping and maintenant - dernier_ping >= timedelta(minutes=10):
+            await salon_alerte.send(
+                content=PING_ROLES,
+                embed=discord.Embed(
+                    title="🚨 Project : Delta toujours hors ligne !",
+                    description="Aucun message de présence depuis plus de 10 minutes.",
+                    color=discord.Color.red(),
+                    timestamp=maintenant
+                )
+            )
+            print("🔁 Nouvelle alerte envoyée après 10 minutes.")
+            dernier_ping = maintenant
 
 # Événement quand le bot est prêt
 @bot.event
