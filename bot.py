@@ -247,6 +247,7 @@ async def add_voice_points():
                     {"$inc": {"points": 1}},
                     upsert=True
                 )
+
 dernier_ping = None
 delta_en_ligne = True
 
@@ -271,14 +272,7 @@ async def verifier_presence_delta():
     if dernier_msg_delta and maintenant - dernier_msg_delta.created_at <= timedelta(minutes=2):
         # Delta est actif
         if not delta_en_ligne:
-            # Delta vient juste de revenir en ligne → envoyer confirmation
-            await canal_presence.send(
-                embed=discord.Embed(
-                    description=f"<a:b_yes:1376916710468354078> | Présence confirmée : **{dernier_msg_delta.author.name}** est actif.",
-                    color=discord.Color.green(),
-                    timestamp=maintenant
-                )
-            )
+            # Delta vient juste de revenir en ligne → seulement réinitialisation
             print("✅ Delta est de retour, alerte réinitialisée.")
 
         delta_en_ligne = True
@@ -411,18 +405,26 @@ async def on_message(message):
     if message.author.bot:
         return
 
-    # Salon spécifique
+    # ----- Partie 1 : Réaction dans un salon spécifique -----
     if str(message.channel.id) == "1360359130161872957":
         try:
-            # Réaction avec l’emoji actuel
             await message.add_reaction(reaction_emojis[current_emoji_index])
-
-            # Passer à l’emoji suivant
             current_emoji_index = (current_emoji_index + 1) % len(reaction_emojis)
         except Exception as e:
             print(f"Erreur lors de la réaction : {e}")
 
-    # Système de points avec cooldown
+    # ----- Partie 2 : Confirmation de présence dans un autre salon -----
+    if message.channel.id == ID_CANAL:
+        canal_presence = bot.get_channel(STATUT_CHANNEL_ID)
+        maintenant = datetime.utcnow()
+        embed = discord.Embed(
+            description=f"<a:b_yes:1376916710468354078> | Présence confirmée : **{message.author.name}** est actif.",
+            color=discord.Color.green(),
+            timestamp=maintenant
+        )
+        await canal_presence.send(embed=embed)
+
+    # ----- Partie 3 : Système de points avec cooldown -----
     key = f"{message.guild.id}-{message.author.id}"
     if key not in message_cooldowns:
         collection30.update_one(
@@ -434,7 +436,9 @@ async def on_message(message):
         await asyncio.sleep(60)
         del message_cooldowns[key]
 
+    # ----- Partie 4 : Autoriser les commandes -----
     await bot.process_commands(message)
+
 #-------------------------------------------------------------------------- Bot Event:
 @bot.event
 async def on_message_delete(message):
