@@ -383,7 +383,7 @@ async def on_message(message):
     # ----- Partie 2 : Confirmation de présence dans un autre salon -----
     # Remplace PROJECT_DELTA_ID par l'ID du bot Project : Delta
     if message.channel.id == ID_CANAL and message.author.id == PROJECT_DELTA_ID:
-        canal_presence = bot.get_channel(STATUT_CHANNEL_ID)
+        canal_presence = bot.get_channel(ID_CANAL)
         maintenant = datetime.utcnow()
         embed = discord.Embed(
             description=f"<a:b_yes:1376916710468354078> | Présence confirmée : **{message.author.name}** est actif.",
