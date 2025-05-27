@@ -283,7 +283,6 @@ async def verifier_presence_delta():
                 timestamp=maintenant
             )
         )
-await channel.send(
 )
 
         delta_en_ligne = True
