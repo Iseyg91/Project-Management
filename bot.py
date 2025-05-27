@@ -363,18 +363,6 @@ reaction_emojis = [
     "<a:heart:1376670580283146371>"
 ]
 
-# Cooldown pour éviter le spam de points
-message_cooldowns = {}
-
-# Liste des emojis animés à alterner
-reaction_emojis = [
-    "<a:4a_bubbleheart:1376670552676368557>",
-    "<a:white_heart:1376670622071128185>",
-    "<a:Heart:1376670687497818162>",
-    "<a:pink_blue_heart:1376670720301469786>",
-    "<a:heart:1376670580283146371>"
-]
-
 # Index pour alterner les emojis
 current_emoji_index = 0
 
@@ -382,9 +370,8 @@ current_emoji_index = 0
 async def on_message(message):
     global current_emoji_index
 
-    if message.author.bot:
+    if message.author.bot and message.author.id != PROJECT_DELTA_ID:
         return
-
     # ----- Partie 1 : Réaction dans un salon spécifique -----
     if str(message.channel.id) == "1360359130161872957":
         try:
@@ -404,6 +391,7 @@ async def on_message(message):
             timestamp=maintenant
         )
         await canal_presence.send(embed=embed)
+
     # ----- Partie 3 : Système de points avec cooldown -----
     key = f"{message.guild.id}-{message.author.id}"
     if key not in message_cooldowns:
