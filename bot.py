@@ -253,7 +253,7 @@ async def add_voice_points():
 dernier_ping = None
 delta_en_ligne = True
 
-@tasks.loop(minutes=2)
+@tasks.loop(minutes=5)
 async def verifier_presence_delta():
     canal_verification = bot.get_channel(ID_CANAL)  # Salon où Delta envoie ses messages de présence
     canal_alerte = bot.get_channel(STATUT_CHANNEL_ID)  # Salon où tu veux envoyer l'alerte
