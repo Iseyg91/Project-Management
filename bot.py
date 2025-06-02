@@ -363,7 +363,7 @@ async def add_voice_points():
 dernier_ping = None
 delta_en_ligne = True
 
-@tasks.loop(minutes=5)
+@tasks.loop(minutes=2)
 async def verifier_presence_delta():
     canal_verification = bot.get_channel(ID_CANAL)  # Salon où Delta envoie ses messages de présence
     canal_alerte = bot.get_channel(STATUT_CHANNEL_ID)  # Salon où tu veux envoyer l'alerte
@@ -1439,17 +1439,18 @@ async def on_interaction(interaction: discord.Interaction):
 
         overwrites = {
             guild.default_role: discord.PermissionOverwrite(view_channel=False),
-            user: discord.PermissionOverwrite(view_channel=True, send_messages=True),
+            user: discord.PermissionOverwrite(view_channel=True, send_messages=True),  # ✅ Ajouté correctement
             guild.get_role(SUPPORT_ROLE_ID): discord.PermissionOverwrite(view_channel=True, send_messages=True)
         }
 
         ticket_channel = await guild.create_text_channel(
-            name=f"︱🚫・{user.name}",
+            name=f"ticket-{user.name}",  # ✅ Nom corrigé pour éviter confusion avec "︱🚫・"
             category=category,
             overwrites=overwrites,
             reason="Ticket support global"
         )
 
+        # ✅ Enregistrement dans MongoDB
         collection16.insert_one({
             "user_id": str(user.id),
             "channel_id": str(ticket_channel.id)
@@ -1472,9 +1473,9 @@ async def on_interaction(interaction: discord.Interaction):
             ),
             color=discord.Color.green()
         )
-        await ticket_channel.send(content=user.mention, embed=embed, view=GlobalSupportView())
-        await interaction.response.send_message(f"✅ Ton ticket a été ouvert ici : {ticket_channel.mention}", ephemeral=True)
 
+        await ticket_channel.send(content=user.mention, embed=embed, view=GlobalSupportView())  # ✅ Mention du créateur dans le ticket
+        await interaction.response.send_message(f"✅ Ton ticket a été ouvert ici : {ticket_channel.mention}", ephemeral=True)
 
 #--------------------------------------------------------------------------- Gestion Clients
 
