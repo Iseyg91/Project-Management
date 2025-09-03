@@ -33,6 +33,9 @@ from discord.ui import View, Select
 import uuid
 from discord import app_commands, Interaction, Embed, Member, ui
 from datetime import datetime
+from discord.ext import tasks
+import requests
+import asyncio
 
 token = os.environ['ETHERYA']
 intents = discord.Intents.all()
@@ -62,6 +65,7 @@ ALERT_CHANNEL_ID = 1361329246236053586
 ALERT_NON_PREM_ID = 1364557116572172288
 STAFF_ROLE_ID = 1362339195380568085
 CHANNEL_ID = 1375496380499493004
+MANGA_ID = 1412470198472147068
 
 # --- ID Sanctions Serveur Delta ---
 WARN_LOG_CHANNEL = 1362435917104681230
@@ -113,6 +117,39 @@ def create_embed(title, description, color=discord.Color.blue(), footer_text="")
     embed = discord.Embed(title=title, description=description, color=color)
     embed.set_footer(text=footer_text)
     return embed
+
+# Fonction pour récupérer les nouveautés via AniList
+def get_new_anime():
+    url = "https://graphql.anilist.co"
+    query = """
+    query {
+      Page(page: 1, perPage: 5) {
+        media(sort: START_DATE_DESC, type: ANIME, status_in: [RELEASING, NOT_YET_RELEASED]) {
+          id
+          title {
+            romaji
+            english
+          }
+          startDate {
+            year
+            month
+            day
+          }
+          coverImage {
+            large
+          }
+          siteUrl
+          description(asHtml: false)
+        }
+      }
+    }
+    """
+    response = requests.post(url, json={'query': query})
+    if response.status_code == 200:
+        return response.json()['data']['Page']['media']
+    else:
+        print("Erreur AniList API:", response.status_code)
+        return []
 
 # Connexion MongoDB
 mongo_uri = os.getenv("MONGO_DB")  # URI de connexion à MongoDB
@@ -479,7 +516,31 @@ async def update_top_roles():
                 if member.id not in [u["user_id"] for u in top_users]:
                     await member.remove_roles(role)
                     print(f"Retiré {role.name} de {member.display_name}")
-                    
+
+# Boucle pour envoyer les nouveautés toutes les 24h
+@tasks.loop(minutes=2)
+async def send_new_anime():
+    await client.wait_until_ready()
+    channel = client.get_channel(MANGA_ID)
+    new_anime_list = get_new_anime()
+
+    for anime in new_anime_list:
+        title = anime['title']['english'] or anime['title']['romaji']
+        url = anime['siteUrl']
+        description = anime['description'] or "Pas de description."
+        image = anime['coverImage']['large']
+
+        embed = discord.Embed(
+            title=title,
+            url=url,
+            description=(description[:200] + "...") if len(description) > 200 else description,
+            color=discord.Color.blue()
+        )
+        embed.set_image(url=image)
+        embed.set_footer(text="Source: AniList")
+        await channel.send(embed=embed)
+        await asyncio.sleep(2)  # Petite pause pour éviter le spam
+
 # Événement quand le bot est prêt
 @bot.event
 async def on_ready():
@@ -494,6 +555,7 @@ async def on_ready():
     auto_collect_loop.start()
     add_voice_points.start()
     verifier_presence_delta.start()
+    send_new_anime.start()
     
     guild_count = len(bot.guilds)
     member_count = sum(guild.member_count for guild in bot.guilds)
