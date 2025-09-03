@@ -517,11 +517,10 @@ async def update_top_roles():
                     await member.remove_roles(role)
                     print(f"Retiré {role.name} de {member.display_name}")
 
-# Boucle pour envoyer les nouveautés toutes les 24h
 @tasks.loop(minutes=2)
 async def send_new_anime():
-    await client.wait_until_ready()
-    channel = client.get_channel(MANGA_ID)
+    await bot.wait_until_ready()  # <-- Ici
+    channel = bot.get_channel(MANGA_ID)
     new_anime_list = get_new_anime()
 
     for anime in new_anime_list:
